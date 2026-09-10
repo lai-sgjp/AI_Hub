@@ -38,6 +38,56 @@ class ChatIntegrationTest {
         compose.onNodeWithText(world).performClick()
         compose.onNodeWithText("雪夜书店").performClick()
     }
+    @Test fun switchApiDuringStreamKeepsPartialAndUsesNewKey() {
+        val server=MockWebServer()
+        server.enqueue(MockResponse().setHeader("Content-Type","text/event-stream").setBody("data: {\"choices\":[{\"delta\":{\"content\":\"切换前部分\"}}]}\n\n"+"data: {\"choices\":[{\"delta\":{\"content\":\"稍后\"}}]}\n\n".repeat(100)).throttleBody(90,1,TimeUnit.SECONDS))
+        server.enqueue(MockResponse().setHeader("Content-Type","text/event-stream").setBody("data: {\"choices\":[{\"delta\":{\"content\":\"新密钥回复\"}}]}\n\ndata: [DONE]\n\n"))
+        server.start()
+        try {
+            val world="切换验收-${System.nanoTime()}"
+            val room=fixture(server,world)
+            val replacement=ApiProfile(name="备用-${System.nanoTime()}",model="test",baseUrl=server.url("/v1").toString())
+            runBlocking { app.repository.save(replacement); app.secrets.put(replacement.id,"replacement-test-secret") }
+            enter(world)
+            compose.onNodeWithText("写下你的回应…").performTextInput("开始")
+            compose.onNodeWithContentDescription("发送").performClick()
+            compose.waitUntil(15000) { compose.onAllNodes(hasText("切换前部分",substring=true)).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("API：本地验收 · 切换 / 管理").performClick()
+            compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("添加 API"))).performScrollToNode(hasText(replacement.name))
+            compose.onNode(hasText(replacement.name) and hasAnySibling(hasText("test"))).assertExists()
+            compose.onNode(hasText("切换到此 API") and hasAnySibling(hasText("编辑")) and hasAnyAncestor(hasAnyChild(hasText(replacement.name)))).performClick()
+            compose.waitUntil(10000) { runBlocking { app.repository.snapshot().rooms.find { it.id==room.id }?.profileId==replacement.id } }
+            compose.onNodeWithText("知道了").performClick()
+            compose.onNodeWithText("完成").performClick()
+            assertEquals(1,server.requestCount)
+            val saved=runBlocking { app.repository.snapshot() }
+            assertTrue(saved.messages.any { it.roomId==room.id && it.status=="interrupted" && it.text.startsWith("切换前部分") })
+            compose.onNodeWithText("写下你的回应…").performTextInput("继续剧情")
+            compose.onNodeWithContentDescription("发送").performClick()
+            compose.waitUntil(15000) { compose.onAllNodesWithText("新密钥回复").fetchSemanticsNodes().isNotEmpty() }
+            assertEquals("Bearer instrumentation-only-secret",server.takeRequest(2,TimeUnit.SECONDS)!!.getHeader("Authorization"))
+            assertEquals("Bearer replacement-test-secret",server.takeRequest(2,TimeUnit.SECONDS)!!.getHeader("Authorization"))
+            compose.activityRule.scenario.recreate()
+            compose.onNodeWithText("API：${replacement.name} · 切换 / 管理").assertExists()
+        } finally { server.shutdown() }
+    }
+    @Test fun deletingInUseApiIsRejectedAndUnusedKeyCanBeRemoved() = runBlocking {
+        val profile=ApiProfile(name="unused",model="test")
+        app.repository.save(profile)
+        app.secrets.put(profile.id,"removal-test-secret")
+        val character=Character(name="测试角色")
+        val world=World(name="删除配置验收",characterIds=listOf(character.id))
+        app.repository.save(character); app.repository.save(world)
+        val room=ChatRoom(profileId=profile.id,worldId=world.id,memberIds=listOf(character.id))
+        app.repository.save(room)
+        try { app.repository.deleteUnusedProfile(profile.id); fail("In-use profile deleted") } catch(_: IllegalArgumentException) { }
+        assertTrue(app.repository.snapshot().profiles.any { it.id==profile.id })
+        val unused=ApiProfile(name="delete",model="test")
+        app.repository.save(unused); app.secrets.put(unused.id,"removal-test-secret")
+        app.repository.deleteUnusedProfile(unused.id); app.secrets.remove(unused.id)
+        assertFalse(app.repository.snapshot().profiles.any { it.id==unused.id })
+        assertEquals("",app.secrets.get(unused.id))
+    }
     @Test fun memoryTableIsWorldIsolatedAndEditableInDarkMode() {
         val server=MockWebServer(); server.start()
         try {

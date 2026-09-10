@@ -22,6 +22,7 @@ class TavernViewModel(application: Application): AndroidViewModel(application) {
     val activeRoom=MutableStateFlow<String?>(null)
     val activeWorld=MutableStateFlow<String?>(null)
     val busy=MutableStateFlow(false)
+    val switchingApi=MutableStateFlow(false)
     val live=MutableStateFlow<Message?>(null)
     private var generation: Job?=null
     private val ready=viewModelScope.async {
@@ -48,12 +49,12 @@ class TavernViewModel(application: Application): AndroidViewModel(application) {
     }
     fun save(world: World) = action { require(world.name.isNotBlank()) { "请填写世界名字" }; repository.save(world) }
     fun save(fact: MemoryFact) = action {
-        require(!busy.value) { "请先停止生成" }
+        require(!busy.value && !switchingApi.value) { "请先停止生成" }
         require(fact.subject.isNotBlank() && fact.content.isNotBlank()) { "请填写对象和事实" }
         repository.save(fact.copy(embedding=emptyList(),embeddingModel="",updatedAt=System.currentTimeMillis()))
     }
     fun save(room: ChatRoom) = action {
-        require(!busy.value) { "请先停止当前生成再修改房间" }
+        require(!busy.value && !switchingApi.value) { "请先停止当前生成再修改房间" }
         require(room.name.isNotBlank() && room.memberIds.size in 1..8 && room.memberIds.distinct().size==room.memberIds.size && room.profileId.isNotBlank()) { "填写房间名字，选择 API 和 1～8 位角色" }
         repository.save(room)
         activeRoom.value=room.id
@@ -76,9 +77,25 @@ class TavernViewModel(application: Application): AndroidViewModel(application) {
         report("连接成功，已收到模型回复。")
     }
     fun stop() { generation?.cancel() }
+    fun switchApi(roomId: String, profileId: String) = action {
+        if(switchingApi.value) return@action
+        switchingApi.value=true
+        try {
+            require(repository.snapshot().profiles.any { it.id==profileId }) { "API 配置不存在" }
+            generation?.cancelAndJoin()
+            val room=requireNotNull(repository.snapshot().rooms.find { it.id==roomId }) { "房间不存在" }
+            repository.save(room.copy(profileId=profileId))
+            report("API 已切换，下一次发送使用新配置。已收到的回复已保留。")
+        } finally { switchingApi.value=false }
+    }
+    fun deleteApi(profileId: String) = action {
+        require(!busy.value && !switchingApi.value) { "请先停止生成或等待切换完成" }
+        repository.deleteUnusedProfile(profileId)
+        withContext(Dispatchers.IO) { app.secrets.remove(profileId) }
+    }
     fun send(text: String, nominated: String? = null) {
         val id=activeRoom.value ?: return
-        if(busy.value) return
+        if(busy.value || switchingApi.value) return
         busy.value=true
         generation=viewModelScope.launch {
             try {
@@ -98,7 +115,7 @@ class TavernViewModel(application: Application): AndroidViewModel(application) {
         }
     }
     fun branch(message: Message, replacement: String?) = action {
-        require(!busy.value) { "请先停止当前生成" }
+        require(!busy.value && !switchingApi.value) { "请先停止当前生成" }
         val s=repository.snapshot()
         val room=requireNotNull(s.rooms.find { it.id==message.roomId })
         val history=s.messages.filter { it.roomId==room.id }.sortedBy { it.sequence }
@@ -111,7 +128,7 @@ class TavernViewModel(application: Application): AndroidViewModel(application) {
         else report("已建立分支，原剧情保留。可继续聊天。")
     }
     fun greeting(room: ChatRoom, character: Character, text: String) = action {
-        require(!busy.value) { "请先停止生成" }
+        require(!busy.value && !switchingApi.value) { "请先停止生成" }
         val s=repository.snapshot()
         require(s.messages.none { it.roomId==room.id }) { "开场白仅能用于空房间" }
         repository.save(Message(roomId=room.id,speakerId=character.id,text=Engine.substitute(text,character.name,room.userName),sequence=0))
@@ -144,14 +161,14 @@ class TavernViewModel(application: Application): AndroidViewModel(application) {
         report("备份已导出，不包含 API 密钥。")
     }
     fun restore(uri: Uri) = action {
-        require(!busy.value) { "请先停止生成再恢复备份" }
+        require(!busy.value && !switchingApi.value) { "请先停止生成再恢复备份" }
         val bytes=read(uri,BackupCodec.MAX_BACKUP)
         val restored=withContext(Dispatchers.Default) { BackupCodec.decode(bytes) }
         repository.merge(restored,true)
         report("已恢复为新增副本，请重新填写恢复的 API 密钥。")
     }
     fun organizeMemory(roomId: String, vectorsOnly: Boolean=false) {
-        if(busy.value) return
+        if(busy.value || switchingApi.value) return
         busy.value=true
         generation=viewModelScope.launch {
             try {

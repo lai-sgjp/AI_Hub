@@ -1,7 +1,7 @@
 cn.aitavern.app.BundledContentDeviceTest:.
-cn.aitavern.app.ChatIntegrationTest:...
+cn.aitavern.app.ChatIntegrationTest:.....
 cn.aitavern.app.SmokeTest:.
 
-Time: 23.69
+Time: 35.67
 
-OK (5 tests)
+OK (7 tests)

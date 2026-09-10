@@ -67,12 +67,15 @@ private val teal=Color(0xFF087F72)
     val worldCharacters=all.characters.filter { it.id in world?.characterIds.orEmpty() }
     val s=all.copy(characters=worldCharacters,books=all.books.filter { it.id in (world?.bookIds.orEmpty()+worldCharacters.flatMap { c -> c.bookIds }) },rooms=all.rooms.filter { it.worldId==world?.id })
     val active by vm.activeRoom.collectAsStateWithLifecycle()
-    val busy by vm.busy.collectAsStateWithLifecycle()
+    val generating by vm.busy.collectAsStateWithLifecycle()
+    val switching by vm.switchingApi.collectAsStateWithLifecycle()
+    val busy=generating || switching
     val notice by vm.notice.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var character by remember { mutableStateOf<Character?>(null) }
     var book by remember { mutableStateOf<LoreBook?>(null) }
     var profile by remember { mutableStateOf<ApiProfile?>(null) }
+    var apiManager by rememberSaveable { mutableStateOf(false) }
     var roomEditor by remember { mutableStateOf<ChatRoom?>(null) }
     var worldEditor by remember { mutableStateOf<World?>(null) }
     val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { uri -> vm.import(uri,tab==2) } }
@@ -82,7 +85,7 @@ private val teal=Color(0xFF087F72)
     MaterialTheme(colorScheme=if(dark) darkColorScheme(primary=Color(0xFF72DCC6),onPrimary=Color(0xFF00382F),primaryContainer=Color(0xFF155046),onPrimaryContainer=Color(0xFFB8F2DF),secondary=Color(0xFFBACAC3),background=Color(0xFF101715),surface=Color(0xFF101715),surfaceContainer=Color(0xFF1D2925),surfaceContainerHigh=Color(0xFF26332E),surfaceContainerLow=Color(0xFF16211C)) else lightColorScheme(primary=teal,onPrimary=Color.White,primaryContainer=Color(0xFFD2EFE5),onPrimaryContainer=Color(0xFF123B31),secondary=Color(0xFF51665F),background=Color(0xFFF6F8F7),surface=Color(0xFFF6F8F7),surfaceContainer=Color(0xFFEDF2EF),surfaceContainerHigh=Color(0xFFE5EDE8),surfaceContainerLow=Color(0xFFF1F5F2))) {
         val current=s.rooms.find { it.id==active }
         if(world==null) {
-            Scaffold(topBar={ TopAppBar(title={ Text("选择你的世界",fontWeight=FontWeight.Bold) },actions={ TextButton(onClick={ worldEditor=World() }) { Text("新建世界") } }) }) { padding ->
+            Scaffold(topBar={ TopAppBar(title={ Text("选择你的世界",fontWeight=FontWeight.Bold) },actions={ TextButton(onClick={ apiManager=true }) { Text("管理 API") }; TextButton(onClick={ worldEditor=World() }) { Text("新建世界") } }) }) { padding ->
                 LazyColumn(Modifier.fillMaxSize().padding(padding),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
                     item { SectionTitle("今晚，去哪里？","每个世界，都有自己的相遇和记忆。") }
                     if(all.worlds.isEmpty()) item { EmptyCard("创建第一个世界","设定背景，再邀请角色加入。世界之间的剧情记忆默认隔离。") }
@@ -101,9 +104,9 @@ private val teal=Color(0xFF087F72)
             }
         } else if(current!=null) {
             BackHandler { vm.activeRoom.value=null }
-            ChatScreen(vm,s,current,onBack={ vm.activeRoom.value=null },onSettings={ roomEditor=current })
+            ChatScreen(vm,s,current,onBack={ vm.activeRoom.value=null },onSettings={ roomEditor=current },onApi={ apiManager=true })
         } else Scaffold(
-            topBar={ TopAppBar(title={ Column { Text(world.name,fontWeight=FontWeight.Bold); Text("AI 酒馆 · 让故事从一句话开始",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant) } },navigationIcon={ IconButton(onClick={ vm.activeWorld.value=null }) { Icon(Icons.Default.Public,"切换世界") } },actions={ IconButton(onClick={ worldEditor=world }) { Icon(Icons.Default.Edit,"管理世界") } }) },
+            topBar={ TopAppBar(title={ Column { Text(world.name,fontWeight=FontWeight.Bold); Text("AI 酒馆 · 让故事从一句话开始",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant) } },navigationIcon={ IconButton(onClick={ vm.activeWorld.value=null }) { Icon(Icons.Default.Public,"切换世界") } },actions={ TextButton(onClick={ apiManager=true }) { Text("管理 API") }; IconButton(onClick={ worldEditor=world }) { Icon(Icons.Default.Edit,"管理世界") } }) },
             bottomBar={ NavigationBar {
                 val names=listOf("聊天","角色","世界书","设置")
                 val icons=listOf(Icons.AutoMirrored.Filled.Chat,Icons.Default.People,Icons.Default.MenuBook,Icons.Default.Settings)
@@ -139,7 +142,7 @@ private val teal=Color(0xFF087F72)
                     }
                     3 -> {
                         item { SectionTitle("连接与偏好","API 密钥仅在本机加密保存") }
-                        item { Button(onClick={ profile=ApiProfile() }) { Text("添加 API") } }
+                        item { Button(onClick={ apiManager=true }) { Text("管理 API / 密钥") }; Text("版本 ${BuildConfig.VERSION_NAME} · 下载新版 APK 后点开即可覆盖更新，请勿卸载旧版。") }
                         items(s.profiles,key={ it.id }) { p -> Card(onClick={ profile=p },modifier=Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(p.name,style=MaterialTheme.typography.titleMedium); Text(p.model,style=MaterialTheme.typography.bodyMedium) } } }
                         item { Text("外观",style=MaterialTheme.typography.titleMedium); FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) { listOf("system" to "跟随系统","light" to "浅色","dark" to "深色").forEach { (value,label) -> FilterChip(selected=s.settings.theme==value,onClick={ vm.theme(value) },label={ Text(label) }) } } }
                         item { HorizontalDivider(); Text("备份",Modifier.padding(top=16.dp),style=MaterialTheme.typography.titleMedium); Text("含角色、聊天与设定，不含密钥。恢复会新增副本。",style=MaterialTheme.typography.bodySmall); Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) { OutlinedButton(onClick={ export.launch("AI酒馆备份.zip") }) { Text("导出备份") }; OutlinedButton(onClick={ restore.launch(arrayOf("application/zip","application/octet-stream")) },enabled=!busy) { Text("恢复备份") } } }
@@ -151,6 +154,7 @@ private val teal=Color(0xFF087F72)
         }
         character?.let { value -> CharacterEditor(value,s.books,{ character=null }) { vm.save(it); character=null } }
         book?.let { value -> BookEditor(value,{ book=null }) { vm.save(it); book=null } }
+        if(apiManager) ApiManager(vm,all,current,{ apiManager=false },{ profile=it })
         profile?.let { value -> ProfileEditor(value,vm,{ profile=null }) { p,key -> vm.save(p,key); profile=null } }
         roomEditor?.let { value -> RoomEditor(value,s,{ roomEditor=null }) { vm.save(it); roomEditor=null } }
         worldEditor?.let { value -> WorldEditor(value,all,{ worldEditor=null }) { vm.save(it); worldEditor=null } }
@@ -175,8 +179,10 @@ private val teal=Color(0xFF087F72)
     }
 }
 
-@Composable fun ChatScreen(vm: TavernViewModel, s: Snapshot, room: ChatRoom, onBack: ()->Unit,onSettings: ()->Unit) {
-    val busy by vm.busy.collectAsStateWithLifecycle()
+@Composable fun ChatScreen(vm: TavernViewModel, s: Snapshot, room: ChatRoom, onBack: ()->Unit,onSettings: ()->Unit,onApi: ()->Unit) {
+    val generating by vm.busy.collectAsStateWithLifecycle()
+    val switching by vm.switchingApi.collectAsStateWithLifecycle()
+    val busy=generating || switching
     val live by vm.live.collectAsStateWithLifecycle()
     var text by rememberSaveable(room.id) { mutableStateOf("") }
     var nominated by rememberSaveable(room.id) { mutableStateOf<String?>(null) }
@@ -191,6 +197,7 @@ private val teal=Color(0xFF087F72)
     Scaffold(
         topBar={ TopAppBar(title={ Column { Text(room.name,maxLines=1); Text(if(busy) "正在组织下一句话…" else "${members.size} 位角色 · 本轮 ${room.replies} 位回复",style=MaterialTheme.typography.labelSmall) } },navigationIcon={ IconButton(onClick=onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"返回") } },actions={ IconButton(onClick={ memoryOpen=true }) { Icon(Icons.Default.Psychology,"记忆中心") }; IconButton(onClick=onSettings,enabled=!busy) { Icon(Icons.Default.Tune,"房间设置") } }) },
         bottomBar={ Surface(tonalElevation=2.dp) { Column(Modifier.navigationBarsPadding().imePadding().padding(horizontal=12.dp,vertical=8.dp)) {
+            TextButton(onClick=onApi) { Text("API：${s.profiles.find { it.id==room.profileId }?.name ?: "未配置"} · 切换 / 管理") }
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                 FilterChip(selected=nominated==null,onClick={ nominated=null },label={ Text("自动选人") },enabled=!busy)
                 members.forEach { c -> FilterChip(selected=nominated==c.id,onClick={ nominated=c.id },label={ Text("@${c.name}") },enabled=!busy) }

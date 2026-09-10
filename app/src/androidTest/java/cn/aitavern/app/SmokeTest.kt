@@ -26,6 +26,7 @@ class SmokeTest {
         compose.onNodeWithText("世界书").performClick()
         compose.onNodeWithText("创建世界书").assertExists()
         compose.onNodeWithText("设置").performClick()
+        compose.onNodeWithText("管理 API / 密钥").performClick()
         compose.onNodeWithText("添加 API").assertExists()
     }
 }

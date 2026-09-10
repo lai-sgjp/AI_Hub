@@ -22,6 +22,7 @@ data class Record(@PrimaryKey val id: String, val kind: String, val payload: Str
     @Query("SELECT * FROM records") fun observe(): Flow<List<Record>>
     @Query("SELECT * FROM records") suspend fun all(): List<Record>
     @Upsert suspend fun put(records: List<Record>)
+    @Query("DELETE FROM records WHERE id = :id AND kind = 'profile'") suspend fun deleteProfile(id: String)
     @Query("SELECT EXISTS(SELECT 1 FROM records WHERE id = :id AND kind = 'bundle')") suspend fun hasBundle(id: String): Boolean
     @Query("SELECT payload FROM records WHERE kind = 'bundle'") suspend fun bundleReports(): List<String>
 }
@@ -36,6 +37,10 @@ class Repository(context: Context) {
         return Snapshot(characters=get("character") { TavernJson.decodeFromString<Character>(it) }, books=get("book") { TavernJson.decodeFromString<LoreBook>(it) }, profiles=get("profile") { TavernJson.decodeFromString<ApiProfile>(it) }, rooms=get("room") { TavernJson.decodeFromString<ChatRoom>(it) }.sortedByDescending { it.createdAt }, messages=get("message") { TavernJson.decodeFromString<Message>(it) }.sortedBy { it.sequence }, settings=get("settings") { TavernJson.decodeFromString<AppSettings>(it) }.firstOrNull() ?: AppSettings(), worlds=get("world") { TavernJson.decodeFromString<World>(it) },memories=get("memory") { TavernJson.decodeFromString<MemoryFact>(it) },segments=get("segment") { TavernJson.decodeFromString<SummarySegment>(it) })
     }
     suspend fun snapshot(): Snapshot = decode(db.records().all())
+    suspend fun deleteUnusedProfile(id: String) = db.withTransaction {
+        require(snapshot().rooms.none { it.profileId==id }) { "仍有房间使用此 API，请先为这些房间切换 API，再删除。" }
+        db.records().deleteProfile(id)
+    }
     suspend fun save(value: Character) = db.records().put(listOf(Record(value.id,"character",TavernJson.encodeToString(value))))
     suspend fun save(value: LoreBook) = db.records().put(listOf(Record(value.id,"book",TavernJson.encodeToString(value))))
     suspend fun save(value: ApiProfile) = db.records().put(listOf(Record(value.id,"profile",TavernJson.encodeToString(value))))
@@ -63,6 +68,9 @@ class Repository(context: Context) {
 
 class SecretStore(context: Context) {
     private val preferences = context.getSharedPreferences("api-secrets",Context.MODE_PRIVATE)
+    @Suppress("ApplySharedPref")
+    @android.annotation.SuppressLint("UseKtx")
+    fun remove(id: String) { check(preferences.edit().remove(id).commit()) { "密钥删除失败" } }
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (store.getKey("tavern-api",null) as? SecretKey)?.let { return it }
