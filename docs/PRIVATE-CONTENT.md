@@ -9,12 +9,14 @@
 ```json
 {
   "id": "my-personal-world-v1",
+  "assetSubdir": "bundles/my-personal-world-v1",
   "charactersDir": "D:/my-library/characters",
   "worldDir": "D:/my-library/world",
   "worldName": "我的世界",
   "worldDescription": "共同遵守的世界背景和玩家身份规则",
   "playerName": "玩家",
   "playerDescription": "用户扮演的人格，不由 AI 代演",
+  "characterCards": ["alice.json"],
   "preferredCharacters": [],
   "characterGalleries": {
     "alice.json": [
@@ -29,7 +31,9 @@ python scripts/bundle-content.py --config private-content/bundle.json
 ./scripts/build.ps1
 ```
 
-脚本读取源目录，复制 JSON、Markdown、PNG/JPEG/WebP 到 `app/src/main/assets/bundled/`；它不修改外部源目录。JSON 角色卡和世界书进入清单，Markdown 作为世界的参考资料，`characterGalleries` 将独立图片关联到角色卡。Markdown 资料可在“管理世界”查看，不会整本注入聊天上下文。
+脚本读取源目录，复制 JSON、Markdown、PNG/JPEG/WebP 到 `app/src/main/assets/bundled/`；它不修改外部源目录。`characterCards` 显式列出的 JSON/PNG 进入角色卡清单；未设置时自动识别 JSON 和角色目录顶层 PNG。Markdown 作为世界的参考资料，`characterGalleries` 将独立图片关联到角色卡。Markdown 资料可在“管理世界”查看，不会整本注入聊天上下文。
+
+设置 `assetSubdir` 后，脚本只重建 `app/src/main/assets/bundled/<assetSubdir>`，并在启动时把它作为另一个世界发现；因此可以保留已有根目录 bundle。多个 bundle 使用不同的 `id` 时会显示为多个世界，已安装 bundle 不会覆盖用户编辑。未设置 `assetSubdir` 时保留旧版根目录行为。
 
 `BundledLibrary` 将清单转换为稳定 UUID 的世界、角色、世界书和玩家人格。与玩家同名的卡不会加入 AI 角色。每个 bundle id 只初始化一次，标记与内容使用同一数据库事务保存；用户后续编辑不会被重启覆盖。
 

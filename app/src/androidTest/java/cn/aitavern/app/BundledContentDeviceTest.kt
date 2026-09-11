@@ -37,4 +37,21 @@ class BundledContentDeviceTest {
         assertTrue(after.worlds.single { it.id==world.id }.description.endsWith("个人编辑保留"))
         app.repository.save(world)
     }
+
+    @Test fun nestedBundleInstallsAsAnotherWorld() = runBlocking {
+        val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as TavernApplication
+        val bundleIds=app.assets.list("bundled/bundles").orEmpty()
+        if(bundleIds.isEmpty()) return@runBlocking
+        for(bundleId in bundleIds) {
+            if("manifest.json" !in app.assets.list("bundled/bundles/$bundleId").orEmpty()) continue
+            val manifestPath="bundled/bundles/$bundleId/manifest.json"
+            val manifest=app.assets.open(manifestPath).bufferedReader().use { TavernJson.decodeFromString<BundleManifest>(it.readText()) }
+                .copy(assetPrefix="bundles/$bundleId")
+            BundledContent.install(app,app.repository)
+            val expected=BundledLibrary.load(manifest) { path -> app.assets.open("bundled/$path").use { stream -> stream.readBytes() } }.snapshot
+            val world=app.repository.snapshot().worlds.single { it.id==expected.worlds.single().id }
+            assertEquals(expected.characters.size,world.characterIds.size)
+            assertTrue(expected.characters.flatMap { it.gallery }.all { it.assetPath.startsWith("bundles/$bundleId/") })
+        }
+    }
 }

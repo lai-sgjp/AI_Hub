@@ -8,10 +8,29 @@ import kotlinx.serialization.decodeFromString
 
 object BundledContent {
     suspend fun install(context: Context,repository: Repository) = withContext(Dispatchers.IO) {
-        if(context.assets.list("bundled")?.contains("manifest.json")!=true) return@withContext
-        val manifest=context.assets.open("bundled/manifest.json").bufferedReader().use { TavernJson.decodeFromString<BundleManifest>(it.readText()) }
-        if(repository.hasBundle(manifest.id)) return@withContext
-        val content=BundledLibrary.load(manifest) { path -> context.assets.open("bundled/$path").use { it.readBytes() } }
-        repository.installBundle(manifest.id,content)
+        for(manifestPath in manifestPaths(context)) {
+            val relativeManifestPath=manifestPath.removePrefix("bundled/")
+            val assetPrefix=if(relativeManifestPath == "manifest.json") "" else relativeManifestPath.removeSuffix("/manifest.json")
+            val manifest=context.assets.open(manifestPath).bufferedReader().use { TavernJson.decodeFromString<BundleManifest>(it.readText()) }
+                .copy(assetPrefix=assetPrefix)
+            if(repository.hasBundle(manifest.id)) continue
+            val content=BundledLibrary.load(manifest) { path -> context.assets.open("bundled/$path").use { it.readBytes() } }
+            repository.installBundle(manifest.id,content)
+        }
+    }
+
+    private fun manifestPaths(context: Context): List<String> {
+        val rootEntries=context.assets.list("bundled").orEmpty()
+        val paths=buildList {
+            if("manifest.json" in rootEntries) add("bundled/manifest.json")
+            if("bundles" in rootEntries) {
+                for(bundleId in context.assets.list("bundled/bundles").orEmpty()) {
+                    if("manifest.json" in context.assets.list("bundled/bundles/$bundleId").orEmpty()) {
+                        add("bundled/bundles/$bundleId/manifest.json")
+                    }
+                }
+            }
+        }
+        return paths
     }
 }
