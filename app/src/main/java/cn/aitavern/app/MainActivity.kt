@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -253,6 +254,7 @@ private val teal=Color(0xFF087F72)
 }
 @Composable fun CharacterEditor(initial: Character,books: List<LoreBook>,close: ()->Unit,save: (Character)->Unit) {
     var c by rememberModel(initial)
+    var galleryOpen by rememberSaveable { mutableStateOf(false) }
     Editor("角色设定",close,{ save(c) },c.name.isNotBlank()) {
         Field("名字",c.name,{ c=c.copy(name=it) }); Field("角色描述",c.description,{ c=c.copy(description=it) },3)
         Field("性格",c.personality,{ c=c.copy(personality=it) },2); Field("角色场景",c.scenario,{ c=c.copy(scenario=it) },2)
@@ -260,6 +262,44 @@ private val teal=Color(0xFF087F72)
         Field("备选开场白（用单独一行 --- 分隔）",c.alternateGreetings.joinToString("\n---\n"),{ c=c.copy(alternateGreetings=it.split("\n---\n")) },3)
         Field("对话示例",c.examples,{ c=c.copy(examples=it) },2); Field("角色指令",c.systemPrompt,{ c=c.copy(systemPrompt=it) },2); Field("末尾指令",c.postHistory,{ c=c.copy(postHistory=it) },2)
         Text("关联世界书"); ChoiceChips(books.map { it.id to it.name },c.bookIds) { c=c.copy(bookIds=it) }
+        if(c.gallery.isNotEmpty()) OutlinedButton(onClick={ galleryOpen=true }) { Text("查看角色立绘（${c.gallery.size}）") }
+    }
+    if(galleryOpen) CharacterGalleryDialog(c) { galleryOpen=false }
+}
+
+@Composable fun CharacterGalleryDialog(character: Character,close: ()->Unit) {
+    var index by rememberSaveable(character.id) { mutableIntStateOf(0) }
+    val context=LocalContext.current
+    val image=character.gallery.getOrNull(index)
+    val bitmap by produceState<android.graphics.Bitmap?>(null,image?.assetPath) {
+        value=withContext(Dispatchers.IO) {
+            runCatching {
+                val path=requireNotNull(image).assetPath
+                require(path.isNotBlank() && !path.startsWith('/') && '\\' !in path && ':' !in path && path.split('/').none { it.isBlank() || it=="." || it==".." })
+                context.assets.open("bundled/$path").use(BitmapFactory::decodeStream)
+            }.getOrNull()
+        }
+    }
+    Dialog(onDismissRequest=close,properties=DialogProperties(usePlatformDefaultWidth=false)) {
+        Surface(shape=RoundedCornerShape(24.dp),modifier=Modifier.fillMaxWidth().padding(12.dp).fillMaxHeight(0.9f)) {
+            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    Text("${character.name} · 角色立绘",style=MaterialTheme.typography.titleLarge,modifier=Modifier.weight(1f))
+                    TextButton(onClick=close) { Text("关闭") }
+                }
+                if(image==null) Text("没有可查看的立绘。")
+                else {
+                    Text(image.title,style=MaterialTheme.typography.titleMedium)
+                    if(bitmap!=null) Image(bitmap!!.asImageBitmap(),contentDescription=image.title,contentScale=ContentScale.Fit,modifier=Modifier.fillMaxWidth().weight(1f))
+                    else Text("立绘无法读取：${image.assetPath}",color=MaterialTheme.colorScheme.error)
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                        OutlinedButton(onClick={ index=(index-1+character.gallery.size)%character.gallery.size },enabled=character.gallery.size>1) { Text("上一张") }
+                        Text("${index+1} / ${character.gallery.size}",modifier=Modifier.align(Alignment.CenterVertically))
+                        OutlinedButton(onClick={ index=(index+1)%character.gallery.size },enabled=character.gallery.size>1) { Text("下一张") }
+                    }
+                }
+            }
+        }
     }
 }
 @Composable fun ChoiceChips(options: List<Pair<String,String>>,selected: List<String>,change: (List<String>)->Unit) {
