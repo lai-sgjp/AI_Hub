@@ -20,6 +20,7 @@ import javax.crypto.spec.GCMParameterSpec
 data class Record(@PrimaryKey val id: String, val kind: String, val payload: String)
 data class RecordHead(val id: String, val kind: String, val payload: String, val size: Int)
 @Dao interface RecordDao {
+    @Query("DELETE FROM records WHERE id IN (:ids)") suspend fun deleteIds(ids: List<String>)
     @Query("SELECT id FROM records") fun observe(): Flow<List<String>>
     // Keep every cursor row small, including existing cards with large embedded avatars.
     @Query("SELECT id, kind, substr(payload, 1, 262144) AS payload, length(payload) AS size FROM records")
@@ -49,7 +50,7 @@ class Repository(context: Context) {
     val snapshots = db.records().observe().map { snapshot() }
     private fun decode(rows: List<Record>): Snapshot {
         fun <T> get(kind: String, decode: (String)->T) = rows.filter { it.kind==kind }.map { decode(it.payload) }
-        return Snapshot(characters=get("character") { TavernJson.decodeFromString<Character>(it) }, books=get("book") { TavernJson.decodeFromString<LoreBook>(it) }, profiles=get("profile") { TavernJson.decodeFromString<ApiProfile>(it) }, rooms=get("room") { TavernJson.decodeFromString<ChatRoom>(it) }.sortedByDescending { it.createdAt }, messages=get("message") { TavernJson.decodeFromString<Message>(it) }.sortedBy { it.sequence }, settings=get("settings") { TavernJson.decodeFromString<AppSettings>(it) }.firstOrNull() ?: AppSettings(), worlds=get("world") { TavernJson.decodeFromString<World>(it) },memories=get("memory") { TavernJson.decodeFromString<MemoryFact>(it) },segments=get("segment") { TavernJson.decodeFromString<SummarySegment>(it) })
+        return Snapshot(versions=get("version") { TavernJson.decodeFromString<StoryVersion>(it) },endings=get("ending") { TavernJson.decodeFromString<StoryEnding>(it) },contentCache=get("cache") { TavernJson.decodeFromString<ContentCache>(it) },characters=get("character") { TavernJson.decodeFromString<Character>(it) }, books=get("book") { TavernJson.decodeFromString<LoreBook>(it) }, profiles=get("profile") { TavernJson.decodeFromString<ApiProfile>(it) }, rooms=get("room") { TavernJson.decodeFromString<ChatRoom>(it) }.sortedByDescending { it.createdAt }, messages=get("message") { TavernJson.decodeFromString<Message>(it) }.sortedBy { it.sequence }, settings=get("settings") { TavernJson.decodeFromString<AppSettings>(it) }.firstOrNull() ?: AppSettings(), worlds=get("world") { TavernJson.decodeFromString<World>(it) },memories=get("memory") { TavernJson.decodeFromString<MemoryFact>(it) },segments=get("segment") { TavernJson.decodeFromString<SummarySegment>(it) })
     }
     suspend fun snapshot(): Snapshot = decode(db.records().all())
     suspend fun deleteUnusedProfile(id: String) = db.withTransaction {
@@ -59,18 +60,52 @@ class Repository(context: Context) {
     suspend fun save(value: Character) = db.records().put(listOf(Record(value.id,"character",TavernJson.encodeToString(value))))
     suspend fun save(value: LoreBook) = db.records().put(listOf(Record(value.id,"book",TavernJson.encodeToString(value))))
     suspend fun save(value: ApiProfile) = db.records().put(listOf(Record(value.id,"profile",TavernJson.encodeToString(value))))
-    suspend fun save(value: ChatRoom) = db.records().put(listOf(Record(value.id,"room",TavernJson.encodeToString(value))))
+    suspend fun save(value: ChatRoom) = db.withTransaction {
+        val existing=if(value.activeVersionId.isBlank()) snapshot().rooms.find { it.id==value.id }?.activeVersionId?.takeIf { it.isNotBlank() } else null
+        val room=if(value.activeVersionId.isBlank()) value.copy(activeVersionId=existing ?: newId()) else value
+        if(value.activeVersionId.isBlank() && existing==null) save(StoryVersion(id=room.activeVersionId,roomId=room.id))
+        db.records().put(listOf(Record(room.id,"room",TavernJson.encodeToString(room))))
+    }
     suspend fun save(value: Message) = db.records().put(listOf(Record(value.id,"message",TavernJson.encodeToString(value))))
     suspend fun save(value: AppSettings) = db.records().put(listOf(Record("settings","settings",TavernJson.encodeToString(value))))
     suspend fun save(value: World) = db.records().put(listOf(Record(value.id,"world",TavernJson.encodeToString(value))))
     suspend fun save(value: MemoryFact) = db.records().put(listOf(Record(value.id,"memory",TavernJson.encodeToString(value))))
     suspend fun save(value: SummarySegment) = db.records().put(listOf(Record(value.id,"segment",TavernJson.encodeToString(value))))
+    suspend fun save(value: StoryVersion) = db.records().put(listOf(Record(value.id,"version",TavernJson.encodeToString(value))))
+    suspend fun save(value: StoryEnding) = db.records().put(listOf(Record(value.id,"ending",TavernJson.encodeToString(value))))
+    suspend fun save(value: ContentCache) = db.withTransaction {
+        val matching=snapshot().contentCache.filter { it.key==value.key }
+        val saved=value.copy(id=matching.firstOrNull()?.id ?: value.id)
+        if(matching.size>1) db.records().deleteIds(matching.drop(1).map { it.id })
+        db.records().put(listOf(Record(saved.id,"cache",TavernJson.encodeToString(saved))))
+    }
+    suspend fun removeCache(key: String) = db.withTransaction {
+        val ids=snapshot().contentCache.filter { it.key==key }.map { it.id }
+        if(ids.isNotEmpty()) db.records().deleteIds(ids)
+    }
+    suspend fun updateSettings(change: (AppSettings)->AppSettings) = db.withTransaction { save(change(snapshot().settings)) }
+    suspend fun activate(version: StoryVersion) = db.withTransaction {
+        val old=snapshot()
+        val next=StoryVersions.activate(old,version)
+        val removed=old.messages.filter { it.roomId==version.roomId }.map { it.id } + old.memories.filter { it.roomId==version.roomId && it.scope=="room" }.map { it.id } + old.segments.filter { it.roomId==version.roomId }.map { it.id }
+        if(removed.isNotEmpty()) db.records().deleteIds(removed)
+        merge(next)
+    }
     suspend fun merge(s: Snapshot, settings: Boolean = false) = db.withTransaction {
         s.characters.forEach { save(it) }; s.books.forEach { save(it) }; s.profiles.forEach { save(it) }; s.rooms.forEach { save(it) }; s.messages.forEach { save(it) }
         s.worlds.forEach { save(it) }; s.memories.forEach { save(it) }; s.segments.forEach { save(it) }
+        s.versions.forEach { save(it) }; s.endings.forEach { save(it) }; s.contentCache.forEach { save(it) }
         if(settings) save(s.settings)
     }
-    suspend fun recover() = db.withTransaction { snapshot().messages.filter { it.status=="generating" }.forEach { save(it.copy(status="interrupted")) } }
+    suspend fun recover() = db.withTransaction {
+        val original=snapshot()
+        val migrated=StoryVersions.migrate(original)
+        migrated.rooms.filter { it !in original.rooms }.forEach { save(it) }
+        migrated.versions.filter { it !in original.versions }.forEach { save(it) }
+        original.messages.filter { it.status=="generating" }.forEach { save(it.copy(status="interrupted")) }
+        original.versions.filter { it.status=="generating" }.forEach { v -> save(v.copy(status="interrupted",messages=v.messages.map { if(it.status=="generating") it.copy(status="interrupted") else it })) }
+        if(original.settings.language.isBlank()) save(original.settings.copy(language=java.util.Locale.getDefault().language.takeIf { it in listOf("en","ja") } ?: "zh"))
+    }
     suspend fun hasBundle(id: String)=db.records().hasBundle("bundle:$id")
     suspend fun bundleReports()=db.records().bundleReports()
     suspend fun installBundle(id: String,content: BundleImport)=db.withTransaction {

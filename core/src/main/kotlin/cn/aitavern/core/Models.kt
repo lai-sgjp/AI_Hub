@@ -35,19 +35,23 @@ val TavernJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     val summary: String = "", val summaryThrough: Int = -1, val replies: Int = 1,
     val parentId: String? = null, val createdAt: Long = System.currentTimeMillis()
     ,val worldId: String = "", val longSummary: String = "", val autoMemory: Boolean = true
+    ,val activeVersionId: String = "", val forkSequence: Int? = null, val branchChoice: String = "",
+    val branchNamePending: Boolean = false
 )
 @Serializable data class Message(
     val id: String = newId(), val roomId: String = "", val speakerId: String? = null,
     val text: String = "", val sequence: Int = 0, val status: String = "complete",
     val createdAt: Long = System.currentTimeMillis()
 )
-@Serializable data class AppSettings(val theme: String = "system")
+@Serializable data class AppSettings(val theme: String = "system", val language: String = "", val contentApiNoticeSeen: Boolean = false, val autoContentPaused: Boolean = false)
 @Serializable data class Snapshot(
     val version: Int = 1, val characters: List<Character> = emptyList(), val books: List<LoreBook> = emptyList(),
     val profiles: List<ApiProfile> = emptyList(), val rooms: List<ChatRoom> = emptyList(),
     val messages: List<Message> = emptyList(), val settings: AppSettings = AppSettings()
     ,val worlds: List<World> = emptyList(), val memories: List<MemoryFact> = emptyList(),
     val segments: List<SummarySegment> = emptyList()
+    ,val versions: List<StoryVersion> = emptyList(), val endings: List<StoryEnding> = emptyList(),
+    val contentCache: List<ContentCache> = emptyList()
 )
 @Serializable data class WireMessage(val role: String, val content: String)
 
@@ -61,3 +65,23 @@ val TavernJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     val embedding: List<Float> = emptyList(),val embeddingModel: String = "",val updatedAt: Long = System.currentTimeMillis()
 )
 @Serializable data class SummarySegment(val id: String = newId(),val worldId: String = "",val roomId: String = "",val start: Int = 0,val end: Int = 0,val text: String = "")
+
+/** Inactive timelines own their messages and memory. The active timeline is materialized in Snapshot. */
+@Serializable data class StoryVersion(
+    val id: String = newId(), val roomId: String = "", val forkSequence: Int = -1,
+    val parentVersionId: String? = null, val status: String = "complete",
+    val messages: List<Message> = emptyList(), val memories: List<MemoryFact> = emptyList(),
+    val segments: List<SummarySegment> = emptyList(), val summary: String = "",
+    val longSummary: String = "", val summaryThrough: Int = -1,
+    val createdAt: Long = System.currentTimeMillis()
+)
+@Serializable data class StoryEnding(
+    val id: String = newId(), val roomId: String = "", val versionId: String = "",
+    val fingerprint: String = "", val title: String = "", val outcome: String = "",
+    val groupId: String = "", val reason: String = "", val rejectedGroups: List<String> = emptyList()
+)
+@Serializable data class StoryEntry(
+    val title: String = "", val background: String = "", val memberIds: List<String> = emptyList(),
+    val personaId: String = "", val objective: String = "", val opening: String = ""
+)
+@Serializable data class ContentCache(val id: String = newId(), val key: String = "", val text: String = "", val status: String = "complete")

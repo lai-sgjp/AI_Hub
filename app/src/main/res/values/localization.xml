@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string-array name="ui_labels">
+<item>自动翻译已暂停，请主动继续。</item>
+<item>已达到自动续写上限，进度已保留。请主动继续。</item>
+<item>续写没有新增内容，已停止请求并保留进度。</item>
+
+<item>翻译 / 导览处理中</item>
+<item>自动翻译已暂停</item>
+<item>停止翻译</item>
+<item>恢复自动翻译</item>
+
+<item>世界介绍</item>
+<item>资料未提供</item>
+<item>可扮演身份</item>
+<item>生成 / 翻译世界导览</item>
+<item>认识角色</item>
+<item>故事入口</item>
+<item>选择一个入口即可开始，也可以自定义小剧场。</item>
+<item>自由探索 · 无固定任务</item>
+<item>生成更多入口（六个）</item>
+<item>剧情分支图</item>
+<item>已有故事</item>
+<item>AI 内容服务</item>
+<item>相关世界和角色资料会发送到所选 API，并消耗额度。生成结果保存在本机。</item>
+<item>开启故事</item>
+<item>开始</item>
+<item>翻译开场</item>
+<item>回复版本</item>
+<item>切换到此版本</item>
+<item>双指缩放 / 拖动，点击路线继续故事。回复版本不增加分支。</item>
+<item>重置</item>
+<item>撤销收束</item>
+<item>分歧位置未知</item>
+<item>自定义小剧场</item>
+<item>语言</item>
+<item>翻译</item>
+<item>查看原文</item>
+<item>从这里创建分支</item>
+<item>AI 酒馆 · 让故事从一句话开始</item>
+<item>选择你的世界</item>
+<item>今晚，去哪里？</item>
+<item>每个世界，都有自己的相遇和记忆。</item>
+<item>创建第一个世界</item>
+<item>设定背景，再邀请角色加入。世界之间的剧情记忆默认隔离。</item>
+<item>一个等待书写的世界</item>
+<item>从备份恢复世界</item>
+<item>新建世界</item>
+<item>管理</item>
+<item>管理 API</item>
+<item>切换世界</item>
+<item>管理世界</item>
+<item>聊天</item>
+<item>角色</item>
+<item>世界书</item>
+<item>设置</item>
+<item>你的故事</item>
+<item>先创建角色并在设置中添加 API，再开启故事。</item>
+<item>先去角色页创建或导入角色，再添加 API。</item>
+<item>还没有开始的故事</item>
+<item>故事正等待你的第一句话</item>
+<item>创建人设，或带上熟悉的角色卡</item>
+<item>创建角色</item>
+<item>导入角色卡</item>
+<item>认识一个新角色</item>
+<item>支持 V1/V2 PNG、JSON 角色卡</item>
+<item>点击编辑人设和开场白</item>
+<item>让地点、人物与规则随剧情出现</item>
+<item>创建世界书</item>
+<item>导入世界书</item>
+<item>连接与偏好</item>
+<item>API 密钥仅在本机加密保存</item>
+<item>管理 API / 密钥</item>
+<item>外观</item>
+<item>跟随系统</item>
+<item>浅色</item>
+<item>深色</item>
+<item>备份</item>
+<item>含角色、聊天与设定，不含密钥。恢复会新增副本。</item>
+<item>导出备份</item>
+<item>恢复备份</item>
+<item>聊天上下文会发送至你配置的 API。自动摘要也会消耗 API 额度。</item>
+<item>内置资料导入报告</item>
+<item>提示</item>
+<item>知道了</item>
+<item>我</item>
+<item>正在组织下一句话…</item>
+<item>返回</item>
+<item>记忆中心</item>
+<item>房间设置</item>
+<item>自动选人</item>
+<item>写下你的回应…</item>
+<item>停止</item>
+<item>发送</item>
+<item>发出第一句话，或选择角色的开场白。</item>
+<item>正在输入…</item>
+<item>生成失败 · 可重新生成</item>
+<item>已中断 · 可重新生成</item>
+<item>复制</item>
+<item>重新生成</item>
+<item>编辑并建立新分支</item>
+<item>原剧情保留，新分支从这里继续。</item>
+<item>消息</item>
+<item>保存分支</item>
+<item>取消</item>
+<item>保存</item>
+<item>完成</item>
+<item>继续</item>
+<item>角色设定</item>
+<item>名字</item>
+<item>角色描述</item>
+<item>性格</item>
+<item>角色场景</item>
+<item>开场白</item>
+<item>对话示例</item>
+<item>角色指令</item>
+<item>末尾指令</item>
+<item>关联世界书</item>
+<item>备选开场白（用单独一行 --- 分隔）</item>
+<item>没有可查看的立绘。</item>
+<item>上一张</item>
+<item>下一张</item>
+<item>世界书条目</item>
+<item>添加条目</item>
+<item>空条目</item>
+<item>关键词（逗号分隔）</item>
+<item>设定内容</item>
+<item>优先级</item>
+<item>启用</item>
+<item>常驻</item>
+<item>删除条目</item>
+<item>扫描最近 6 条消息，优先级越大越靠前。</item>
+<item>房间与记忆</item>
+<item>房间名字</item>
+<item>参与角色（1～8 位）</item>
+<item>房间 API</item>
+<item>选择你扮演的人格</item>
+<item>你的名字</item>
+<item>你的人设</item>
+<item>剧情场景</item>
+<item>置顶记忆（始终发送）</item>
+<item>小记忆 · 近期阶段摘要</item>
+<item>大记忆 · 长期剧情摘要</item>
+<item>定期整理记忆（每 12 条完整消息）</item>
+<item>本轮回复人数</item>
+<item>房间世界书</item>
+<item>长角色卡默认预留 32K 上下文，请按服务实际支持的长度设置。</item>
+<item>API 配置</item>
+<item>配置名字</item>
+<item>基础地址（含 /v1，不含 /chat/completions）</item>
+<item>API 密钥（留空保留已保存密钥）</item>
+<item>模型</item>
+<item>获取模型</item>
+<item>测试连接</item>
+<item>上下文长度</item>
+<item>最大输出</item>
+<item>流式显示</item>
+<item>Embedding 模型（可选，用于记忆向量化）</item>
+<item>Embedding 使用同一基础地址下的 /embeddings。留空时使用关键词检索，可在记忆中心重建索引。</item>
+<item>上下文为保守估算。连接测试会发送一条小请求。</item>
+<item>世界名字</item>
+<item>世界观与背景</item>
+<item>世界背景会用于此世界的所有聊天。剧情记忆默认隔离。</item>
+<item>你可扮演的人格</item>
+<item>添加人格</item>
+<item>加入此世界的角色</item>
+<item>已被本世界房间使用的角色会保留。进入世界后可创建或导入新角色。</item>
+<item>全世界共用的世界书</item>
+<item>随附参考资料</item>
+<item>用户人格</item>
+<item>人格名字</item>
+<item>身份、性格与背景</item>
+<item>删除人格</item>
+<item>原始对话 → 小记忆 → 大记忆 → 记忆表格 → 相关记忆检索</item>
+<item>总览</item>
+<item>记忆表</item>
+<item>阶段记录</item>
+<item>记忆索引</item>
+<item>当前使用关键词检索。可在 API 配置填写 embedding 模型。</item>
+<item>整理记忆</item>
+<item>重建向量索引</item>
+<item>手动整理提取最近 12 条完整消息；定期整理会更新大小摘要与记忆表。操作会调用 API。</item>
+<item>置顶记忆</item>
+<item>暂无，可在房间设置编辑。</item>
+<item>小记忆 · 当前阶段</item>
+<item>暂无阶段摘要。原始聊天记录始终保留。</item>
+<item>大记忆 · 长期剧情</item>
+<item>暂无长期摘要。</item>
+<item>搜索记忆表</item>
+<item>添加记忆</item>
+<item>左右滑动查看来源和状态；点击条目编辑。锁定后，自动整理不会覆盖该事实。</item>
+<item>类型</item>
+<item>对象</item>
+<item>记忆事实</item>
+<item>来源 / 状态</item>
+<item>剧情积累后自动整理。</item>
+<item>记忆条目</item>
+<item>对象（建议包含具体属性）</item>
+<item>事实内容</item>
+<item>锁定，避免自动覆盖</item>
+<item>启用检索</item>
+<item>在此世界所有剧情共享</item>
+<item>世界共享会使其他房间和分支也能召回此事实。默认仅当前剧情。</item>
+<item>每个配置独立保存地址、模型和密钥。同一服务的不同密钥也可以分别命名添加。</item>
+<item>添加 API</item>
+<item>正在使用</item>
+<item>编辑</item>
+<item>切换到此 API</item>
+<item>删除</item>
+<item>删除配置及其本机密钥。仍被房间使用的配置需先切换后才能删除。</item>
+<item>切换仅影响当前房间。生成中切换会停止本轮并保存部分回复，不会自动重发。</item>
+<item>关闭</item>
+<item>世界书名字</item>
+<item>展开</item>
+<item>收起</item>
+<item>重试分支命名</item>
+<item>重新命名分支</item>
+<item>{0} 位角色 · {1} 个人格</item>
+<item>{0} 个聊天 · 记录保存在手机</item>
+<item>{0} 条设定 · {1} 条启用</item>
+<item>版本 {0} · 下载新版 APK 后点开即可覆盖更新，请勿卸载旧版。</item>
+<item>{0} 位角色 · 本轮 {1} 位回复</item>
+<item>API：{0} · 切换 / 管理</item>
+<item>未配置</item>
+<item>{0}，即将开场</item>
+<item>查看角色立绘（{0}）</item>
+<item>{0} · 角色立绘</item>
+<item>立绘无法读取：{0}</item>
+<item>{0} 位</item>
+<item>已摘要至消息序号 {0}；原聊天记录仍保留。</item>
+<item>温度 {0}</item>
+<item>{0} 条启用 · {1} 条有效向量</item>
+<item>向量模型：{0}。接口失败时回退关键词检索。</item>
+<item>已覆盖至消息 {0}，更早的阶段摘要在“阶段记录”中保留。</item>
+<item>消息 {0}～{1}</item>
+<item>删除 {0}？</item>
+<item>请先停止生成</item>
+<item>请先选择 API</item>
+<item>API 返回空内容</item>
+<item>故事入口格式无效，请重试</item>
+<item>生成失败，请重试</item>
+<item>操作失败，请重试</item>
+<item>正在加载…</item>
+<item>未完成候选</item>
+<item>complete</item>
+<item>failed</item>
+<item>interrupted</item>
+<item>generating</item>
+<item>新的行动选择（可选）</item>
+<item>标记结局</item>
+<item>结局结果</item>
+<item>Manual</item>
+<item>API 已切换，下一次发送使用新配置。已收到的回复已保留。</item>
+<item>API 配置不存在</item>
+<item>世界资料过长，请增加上下文预算</item>
+<item>填写房间名字，选择 API 和 1～8 位角色</item>
+<item>备份已导出，不包含 API 密钥。</item>
+<item>导入成功，所有支持字段已应用。</item>
+<item>已建立分支，原剧情保留。可继续聊天。</item>
+<item>已恢复为新增副本，请重新填写恢复的 API 密钥。</item>
+<item>开场白仅能用于空房间</item>
+<item>房间不存在</item>
+<item>房间未配置 API</item>
+<item>文件超过大小上限</item>
+<item>检查上下文、输出上限和温度</item>
+<item>模型列表已获取</item>
+<item>此构建未包含内置资料，可自行导入。</item>
+<item>记忆已整理，向量索引已更新。</item>
+<item>记忆表格已更新。未配置 embedding 模型，当前使用关键词检索。</item>
+<item>请先停止当前生成</item>
+<item>请先停止当前生成再修改房间</item>
+<item>请先停止生成再恢复备份</item>
+<item>请先停止生成或等待切换完成</item>
+<item>请在 API 设置填写 embedding 模型。当前使用关键词检索。</item>
+<item>请填写 API 名字和模型</item>
+<item>请填写世界书名字</item>
+<item>请填写世界名字</item>
+<item>请填写对象和事实</item>
+<item>请填写角色名字</item>
+<item>请增大上下文预算以生成世界导览</item>
+<item>请输入有效的 HTTPS API 地址</item>
+<item>还没有可整理的对话</item>
+<item>连接成功，已收到模型回复。</item>
+<item>API 在生成过程中返回错误。</item>
+<item>API 地址不能包含用户名、密码、查询参数或锚点</item>
+<item>API 没有返回文本回复。</item>
+<item>API 返回空响应</item>
+<item>上下文长度必须大于最大输出</item>
+<item>响应格式不兼容或连接中断，请检查服务后重试。</item>
+<item>回复达到输出上限，已保留部分内容。</item>
+<item>回复达到输出上限，已保留部分内容；请增大输出上限后重试。</item>
+<item>回复连接中断，已保留部分内容。</item>
+<item>服务端终止了本次回复。</item>
+<item>网络连接失败或超时，请检查地址和网络后重试。</item>
+<item>请先填写 embedding 模型</item>
+<item>请填写模型名称</item>
+<item>请求过于频繁或额度不足（429），请稍后重试。</item>
+</string-array>
+</resources>

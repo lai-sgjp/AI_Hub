@@ -5,11 +5,17 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Before
+import androidx.lifecycle.ViewModelProvider
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SmokeTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Before fun useChineseInterface() {
+        compose.runOnIdle { ViewModelProvider(compose.activity)[TavernViewModel::class.java].language("zh") }
+        compose.waitUntil(10000) { ViewModelProvider(compose.activity)[TavernViewModel::class.java].snapshot.value.settings.language=="zh" }
+    }
     @Test fun mainDestinationsAndCharacterCreation() {
         val worldName="验收世界-${System.nanoTime()}"
         compose.onNodeWithText("新建世界").performClick()

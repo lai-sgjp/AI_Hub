@@ -34,8 +34,8 @@ class ConversationRunner(private val complete: Completion) {
             fun prompt(): List<WireMessage> {
                 val retrieved=MemoryEngine.retrieve(memories,room.worldId,room.id,query,queryVector,vectorModel)
                 val facts=retrieved.joinToString("\n") { "[${it.category}] ${it.subject}：${it.content}" }
-                val base=Engine.prompt(character,room.copy(scenario=listOfNotNull(world?.description,room.scenario).filter { it.isNotBlank() }.joinToString("\n")),members,history,entries).toMutableList()
-                if(facts.isNotBlank()) base.add(1,WireMessage("system","相关记忆表格（依据已发生的剧情）：\n$facts"))
+                val base=Engine.prompt(character,room.copy(scenario=listOfNotNull(world?.description,room.scenario).filter { it.isNotBlank() }.joinToString("\n")),members,history,entries,snapshot.settings.language).toMutableList()
+                if(facts.isNotBlank()) base.add(2,WireMessage("system","相关记忆表格（依据已发生的剧情）：\n$facts"))
                 return base
             }
             // Fixed settings are never silently truncated.
@@ -81,6 +81,7 @@ class ConversationRunner(private val complete: Completion) {
             Engine.checkBudget(request,available)
             val initial=Message(roomId=room.id,speakerId=character.id,sequence=(history.maxOfOrNull { it.sequence } ?: -1)+1,status="generating")
             val latest=AtomicReference(initial)
+            val raw=StringBuilder()
             saveMessage(initial); live(initial)
             coroutineScope {
                 val persistence=launch {
@@ -90,7 +91,8 @@ class ConversationRunner(private val complete: Completion) {
                 var status="complete"
                 try {
                     complete(profile,key,request) { delta ->
-                        val value=latest.updateAndGet { it.copy(text=it.text+delta) }
+                        raw.append(delta)
+                        val value=latest.updateAndGet { it.copy(text=ReplyText.clean(raw.toString(),character.name,streaming=true)) }
                         live(value)
                     }
                     ensureActive()
@@ -99,7 +101,7 @@ class ConversationRunner(private val complete: Completion) {
                 finally {
                     withContext(NonCancellable) {
                         persistence.cancelAndJoin()
-                        val final=latest.get().copy(status=status)
+                        val final=latest.get().copy(status=status,text=ReplyText.clean(raw.toString(),character.name))
                         saveMessage(final)
                         if(status=="complete") history+=final
                         live(null)

@@ -11,7 +11,7 @@ import java.util.zip.ZipOutputStream
 object BackupCodec {
     const val MAX_BACKUP = 100 * 1024 * 1024
     fun encode(snapshot: Snapshot): ByteArray {
-        val payload = TavernJson.encodeToString(snapshot).toByteArray(Charsets.UTF_8)
+        val payload = TavernJson.encodeToString(snapshot.copy(version=2)).toByteArray(Charsets.UTF_8)
         require(payload.size <= MAX_BACKUP) { "备份超过 100 MB" }
         val bytes = ByteArrayOutputStream()
         ZipOutputStream(bytes).use { it.putNextEntry(ZipEntry("tavern-v1.json")); it.write(payload); it.closeEntry() }
@@ -33,7 +33,7 @@ object BackupCodec {
         return remap(snapshot)
     }
     fun validate(s: Snapshot) {
-        require(s.version == 1) { "不支持此备份版本" }
+        require(s.version in 1..2) { "不支持此备份版本" }
         fun ids(values: List<String>): Set<String> { require(values.all { it.isNotBlank() } && values.distinct().size==values.size) { "备份 ID 无效或重复" }; return values.toSet() }
         val chars=ids(s.characters.map { it.id }); val books=ids(s.books.map { it.id }); val profiles=ids(s.profiles.map { it.id }); val rooms=ids(s.rooms.map { it.id }); ids(s.messages.map { it.id })
         val worlds=ids(s.worlds.map { it.id }); ids(s.memories.map { it.id }); ids(s.segments.map { it.id })
@@ -50,17 +50,34 @@ object BackupCodec {
         require(s.rooms.all { r -> r.memberIds.size in 1..8 && r.memberIds.distinct().size==r.memberIds.size && r.memberIds.all { it in chars } && r.bookIds.all { it in books } && r.profileId in profiles && (r.parentId==null || r.parentId in rooms) && r.replies in 1..2 }) { "房间引用无效" }
         require(s.messages.all { it.roomId in rooms && (it.speakerId==null || it.speakerId in chars) && it.sequence>=0 && it.status in setOf("complete","generating","interrupted","failed") }) { "消息引用无效" }
         require(s.messages.groupBy { it.roomId }.values.all { list -> list.map { it.sequence }.distinct().size==list.size }) { "消息序号重复" }
+        val versions=ids(s.versions.map { it.id })
+        ids(s.endings.map { it.id }); ids(s.contentCache.map { it.id })
+        require(s.rooms.all { it.activeVersionId.isBlank() || s.versions.any { v -> v.id==it.activeVersionId && v.roomId==it.id } }) { "Invalid active version" }
+        require(s.versions.all { v -> v.roomId in rooms && v.status in setOf("complete","generating","interrupted","failed") && (v.parentVersionId==null || s.versions.any { it.id==v.parentVersionId && it.roomId==v.roomId }) }) { "Invalid version" }
+        s.versions.forEach { v ->
+            require(v.messages.all { it.roomId==v.roomId } && v.memories.all { it.roomId==v.roomId && it.scope=="room" } && v.segments.all { it.roomId==v.roomId }) { "Invalid timeline ownership" }
+            validate(s.copy(rooms=s.rooms.map { it.copy(activeVersionId="") },versions=emptyList(),endings=emptyList(),messages=v.messages,memories=v.memories,segments=v.segments))
+        }
+        require(s.endings.all { e -> e.roomId in rooms && e.versionId in versions && s.versions.any { it.id==e.versionId && it.roomId==e.roomId } }) { "Invalid ending" }
         require(s.profiles.all { it.contextSize > it.maxOutput && it.maxOutput > 0 && it.temperature in 0.0..2.0 }) { "API 参数无效" }
     }
     private fun remap(s: Snapshot): Snapshot {
         val chars=s.characters.associate { it.id to newId() }; val books=s.books.associate { it.id to newId() }; val profiles=s.profiles.associate { it.id to newId() }; val rooms=s.rooms.associate { it.id to newId() }
         val worlds=s.worlds.associate { it.id to newId() }
+        val versions=s.versions.associate { it.id to newId() }
+        val groups=(s.endings.map { it.groupId }+s.endings.flatMap { it.rejectedGroups }).filter { it.isNotBlank() }.distinct().associateWith { newId() }
         return s.copy(
+            versions=s.versions.map { v -> v.copy(id=versions.getValue(v.id),roomId=rooms.getValue(v.roomId),parentVersionId=v.parentVersionId?.let(versions::getValue),status=if(v.status=="generating") "interrupted" else v.status,
+                messages=v.messages.map { m -> m.copy(id=newId(),roomId=rooms.getValue(m.roomId),speakerId=m.speakerId?.let(chars::getValue),status=if(m.status=="generating") "interrupted" else m.status) },
+                memories=v.memories.map { m -> m.copy(id=newId(),worldId=worlds.getValue(m.worldId),roomId=rooms.getValue(m.roomId),embedding=emptyList(),embeddingModel="") },
+                segments=v.segments.map { seg -> seg.copy(id=newId(),worldId=worlds.getValue(seg.worldId),roomId=rooms.getValue(seg.roomId)) }) },
+            endings=s.endings.map { e -> e.copy(id=newId(),roomId=rooms.getValue(e.roomId),versionId=versions.getValue(e.versionId),groupId=groups[e.groupId].orEmpty(),rejectedGroups=e.rejectedGroups.mapNotNull { groups[it] },fingerprint="") },
+            contentCache=emptyList(),
             characters=s.characters.map { c -> c.copy(id=chars.getValue(c.id),bookIds=c.bookIds.map(books::getValue)) },
             books=s.books.map { b -> b.copy(id=books.getValue(b.id),entries=b.entries.map { it.copy(id=newId()) }) },
             profiles=s.profiles.map { it.copy(id=profiles.getValue(it.id),name=it.name+" · 恢复") },
             worlds=s.worlds.map { w -> w.copy(id=worlds.getValue(w.id),characterIds=w.characterIds.map(chars::getValue),bookIds=w.bookIds.map(books::getValue),personas=w.personas.map { it.copy(id=newId()) }) },
-            rooms=s.rooms.map { r -> r.copy(id=rooms.getValue(r.id),worldId=worlds[r.worldId].orEmpty(),memberIds=r.memberIds.map(chars::getValue),profileId=profiles.getValue(r.profileId),bookIds=r.bookIds.map(books::getValue),parentId=r.parentId?.let(rooms::getValue),name=r.name+" · 恢复") },
+            rooms=s.rooms.map { r -> r.copy(id=rooms.getValue(r.id),worldId=worlds[r.worldId].orEmpty(),memberIds=r.memberIds.map(chars::getValue),profileId=profiles.getValue(r.profileId),bookIds=r.bookIds.map(books::getValue),parentId=r.parentId?.let(rooms::getValue),activeVersionId=versions[r.activeVersionId].orEmpty(),name=r.name+" · 恢复") },
             memories=s.memories.map { m -> m.copy(id=newId(),worldId=worlds.getValue(m.worldId),roomId=rooms.getValue(m.roomId),embedding=emptyList(),embeddingModel="") },
             segments=s.segments.map { seg -> seg.copy(id=newId(),worldId=worlds.getValue(seg.worldId),roomId=rooms.getValue(seg.roomId)) },
             messages=s.messages.map { m -> m.copy(id=newId(),roomId=rooms.getValue(m.roomId),speakerId=m.speakerId?.let(chars::getValue),status=if(m.status=="generating") "interrupted" else m.status) }

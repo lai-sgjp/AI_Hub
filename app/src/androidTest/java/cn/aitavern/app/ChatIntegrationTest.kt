@@ -14,6 +14,8 @@ import okhttp3.mockwebserver.MockResponse
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Before
+import androidx.lifecycle.ViewModelProvider
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -21,6 +23,10 @@ import java.util.concurrent.TimeUnit
 @RunWith(AndroidJUnit4::class)
 class ChatIntegrationTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @Before fun useChineseInterface() {
+        compose.runOnIdle { ViewModelProvider(compose.activity)[TavernViewModel::class.java].language("zh") }
+        compose.waitUntil(10000) { ViewModelProvider(compose.activity)[TavernViewModel::class.java].snapshot.value.settings.language=="zh" }
+    }
     private val app get()=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as TavernApplication
     private fun fixture(server: MockWebServer,name: String): ChatRoom = runBlocking {
         val c=Character(name="阿岚",description="在雪城经营书店的温柔旅人")
@@ -36,6 +42,7 @@ class ChatIntegrationTest {
             runCatching { compose.onNode(hasScrollAction()).performScrollToNode(hasText(world)); true }.getOrDefault(false)
         }
         compose.onNodeWithText(world).performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("雪夜书店"))
         compose.onNodeWithText("雪夜书店").performClick()
     }
     @Test fun switchApiDuringStreamKeepsPartialAndUsesNewKey() {
@@ -64,7 +71,12 @@ class ChatIntegrationTest {
             assertTrue(saved.messages.any { it.roomId==room.id && it.status=="interrupted" && it.text.startsWith("切换前部分") })
             compose.onNodeWithText("写下你的回应…").performTextInput("继续剧情")
             compose.onNodeWithContentDescription("发送").performClick()
-            compose.waitUntil(15000) { compose.onAllNodesWithText("新密钥回复").fetchSemanticsNodes().isNotEmpty() }
+            try { compose.waitUntil(15000) { compose.onAllNodesWithText("新密钥回复").fetchSemanticsNodes().isNotEmpty() } }
+            catch(e: ComposeTimeoutException) {
+                val model=ViewModelProvider(compose.activity)[TavernViewModel::class.java]
+                val statuses=runBlocking { app.repository.snapshot().messages.filter { it.roomId==room.id }.map { it.status } }
+                throw AssertionError("Synthetic switch test: requests=${server.requestCount}, busy=${model.busy.value}, notice=${model.notice.value}, savedStatuses=$statuses",e)
+            }
             assertEquals("Bearer instrumentation-only-secret",server.takeRequest(2,TimeUnit.SECONDS)!!.getHeader("Authorization"))
             assertEquals("Bearer replacement-test-secret",server.takeRequest(2,TimeUnit.SECONDS)!!.getHeader("Authorization"))
             compose.activityRule.scenario.recreate()
@@ -94,7 +106,7 @@ class ChatIntegrationTest {
             val world="记忆验收-${System.nanoTime()}"
             val room=fixture(server,world)
             runBlocking {
-                app.repository.save(AppSettings("dark"))
+                app.repository.save(app.repository.snapshot().settings.copy(theme="dark"))
                 app.repository.save(MemoryFact(worldId=room.worldId,roomId=room.id,category="物品",subject="银钥匙",content="由旅人保管",locked=true))
                 val other=World(name="不相关的世界",characterIds=room.memberIds)
                 val otherRoom=room.copy(id=newId(),worldId=other.id,name="异界房间")
@@ -113,7 +125,7 @@ class ChatIntegrationTest {
             compose.onAllNodesWithText("保存").onLast().performClick()
             compose.waitUntil(5000) { compose.onAllNodesWithText("由阿岚保管").fetchSemanticsNodes().isNotEmpty() }
             File(app.filesDir,"memory-verification.png").outputStream().use { InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG,100,it) }
-        } finally { runBlocking { app.repository.save(AppSettings("system")) }; server.shutdown() }
+        } finally { runBlocking { app.repository.save(app.repository.snapshot().settings.copy(theme="system")) }; server.shutdown() }
     }
     @Test fun streamPersistsAcrossActivityRecreationAndBackupExcludesSecret() {
         val server=MockWebServer()

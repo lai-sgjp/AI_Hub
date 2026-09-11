@@ -12,10 +12,11 @@ android {
         applicationId = "cn.aitavern.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 5
+        versionName = "0.2.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    bundle { language { enableSplit = false } }
     buildFeatures { compose = true; buildConfig = true }
     // Preserve the certificate used for the first private APK across tool-cache cleanup.
     signingConfigs.getByName("debug") {

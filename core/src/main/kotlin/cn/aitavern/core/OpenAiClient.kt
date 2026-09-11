@@ -8,12 +8,22 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class ApiException(message: String): IOException(message)
+open class ApiException(message: String, val retryable: Boolean = false): IOException(message)
 
 class OpenAiClient(private val client: OkHttpClient = OkHttpClient.Builder().connectTimeout(25,TimeUnit.SECONDS).readTimeout(90,TimeUnit.SECONDS).callTimeout(5,TimeUnit.MINUTES).followRedirects(false).build()) {
+    /** ContentCompletion owns retries. Also block HTTP follow-ups (e.g. 503 Retry-After: 0). */
+    fun withoutAutomaticRetries() = OpenAiClient(client.newBuilder().retryOnConnectionFailure(false)
+        .addInterceptor { chain ->
+            chain.proceed(chain.request().newBuilder().tag(AtomicBoolean::class.java,AtomicBoolean()).build())
+        }.addNetworkInterceptor { chain ->
+            if(chain.request().tag(AtomicBoolean::class.java)!!.getAndSet(true))
+                throw IOException("Automatic follow-up blocked; retry belongs to the content task")
+            chain.proceed(chain.request())
+        }.build())
     private fun url(profile: ApiProfile, suffix: String): HttpUrl {
         val base = profile.baseUrl.trim().trimEnd('/').toHttpUrl()
         require(base.username.isEmpty() && base.password.isEmpty() && base.query == null && base.fragment == null) { "API 地址不能包含用户名、密码、查询参数或锚点" }
@@ -24,7 +34,7 @@ class OpenAiClient(private val client: OkHttpClient = OkHttpClient.Builder().con
         continuation.invokeOnCancellation { call.cancel() }
         call.enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isActive) continuation.resumeWithException(ApiException("网络连接失败或超时，请检查地址和网络后重试。"))
+                if (continuation.isActive) continuation.resumeWithException(ApiException("网络连接失败或超时，请检查地址和网络后重试。",retryable=true))
             }
             override fun onResponse(call: Call, response: Response) {
                 try {
@@ -33,12 +43,12 @@ class OpenAiClient(private val client: OkHttpClient = OkHttpClient.Builder().con
                             401,403 -> "鉴权失败（${it.code}），请检查密钥和权限。"
                             429 -> "请求过于频繁或额度不足（429），请稍后重试。"
                             else -> "API 请求失败（${it.code}），请检查服务配置。"
-                        })
+                        },retryable=it.code in 500..599)
                         read(it) { continuation.isActive }
                     }
                     if (continuation.isActive) continuation.resume(value)
                 } catch (e: Exception) {
-                    if (continuation.isActive) continuation.resumeWithException(if(e is ApiException) e else ApiException("响应格式不兼容或连接中断，请检查服务后重试。"))
+                    if (continuation.isActive) continuation.resumeWithException(if(e is ApiException) e else ApiException("响应格式不兼容或连接中断，请检查服务后重试。",retryable=e is IOException))
                 }
             }
         })
@@ -99,12 +109,12 @@ class OpenAiClient(private val client: OkHttpClient = OkHttpClient.Builder().con
                     }
                     dispatch()
                 }
-                if (!finished) throw ApiException("回复连接中断，已保留部分内容。")
-                if (truncated) throw ApiException("回复达到输出上限，已保留部分内容；请增大输出上限后重试。")
+                if (!finished) throw ApiException("回复连接中断，已保留部分内容。",retryable=true)
+                if (truncated) throw OutputLimitException()
             } else {
                 val choice = TavernJson.parseToJsonElement(source.string()).jsonObject["choices"]!!.jsonArray.first().jsonObject
                 emit(choice["message"]!!.jsonObject["content"]!!.jsonPrimitive.content)
-                if (choice["finish_reason"]?.jsonPrimitive?.content == "length") throw ApiException("回复达到输出上限，已保留部分内容。")
+                if (choice["finish_reason"]?.jsonPrimitive?.content == "length") throw OutputLimitException()
             }
             if (!received && active()) throw ApiException("API 没有返回文本回复。")
         }

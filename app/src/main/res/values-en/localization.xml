@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string-array name="ui_labels">
+<item>Automatic translation is paused. Resume when ready.</item>
+<item>Automatic continuation limit reached. Progress is saved. Tap Translate again to continue.</item>
+<item>Continuation added no new content. Requests stopped; progress is saved.</item>
+
+<item>Translating / generating guide</item>
+<item>Automatic translation paused</item>
+<item>Stop translation</item>
+<item>Resume automatic translation</item>
+
+<item>World guide</item>
+<item>Not provided</item>
+<item>Playable identities</item>
+<item>Generate / translate guide</item>
+<item>Meet the characters</item>
+<item>Story openings</item>
+<item>Choose an opening or create your own scene.</item>
+<item>Free exploration · No fixed objective</item>
+<item>Generate six more openings</item>
+<item>Story map</item>
+<item>Your existing stories</item>
+<item>AI content service</item>
+<item>Relevant world and character data will be sent to the selected API and use credits. Results are saved locally.</item>
+<item>Open a story</item>
+<item>Start</item>
+<item>Translate opening</item>
+<item>Reply versions</item>
+<item>Use this version</item>
+<item>Pinch to zoom, drag to pan. Tap a route to continue. Reply versions stay within routes.</item>
+<item>Reset</item>
+<item>Undo convergence</item>
+<item>Unknown fork point</item>
+<item>Custom scene</item>
+<item>Language</item>
+<item>Translate</item>
+<item>Show original</item>
+<item>Branch from here</item>
+<item>AI Tavern · Begin with a word</item>
+<item>Choose your world</item>
+<item>Where to tonight?</item>
+<item>Every world has its own encounters and memories.</item>
+<item>Create your first world</item>
+<item>Set the scene and invite characters. Memories are isolated by world.</item>
+<item>A world waiting for a story</item>
+<item>Restore worlds from backup</item>
+<item>New world</item>
+<item>Manage</item>
+<item>Manage APIs</item>
+<item>Switch world</item>
+<item>Manage world</item>
+<item>Chat</item>
+<item>Characters</item>
+<item>Lorebooks</item>
+<item>Settings</item>
+<item>Your stories</item>
+<item>Create characters and add an API in settings before starting.</item>
+<item>Create or import a character, then add an API.</item>
+<item>No stories yet</item>
+<item>The story awaits your first words</item>
+<item>Create a persona or import a character card</item>
+<item>Create character</item>
+<item>Import character</item>
+<item>Meet someone new</item>
+<item>Supports V1/V2 PNG and JSON character cards</item>
+<item>Edit persona and greeting</item>
+<item>Bring places, people and rules into the story</item>
+<item>Create lorebook</item>
+<item>Import lorebook</item>
+<item>Connections and preferences</item>
+<item>API keys are encrypted on this device</item>
+<item>Manage APIs / keys</item>
+<item>Appearance</item>
+<item>System</item>
+<item>Light</item>
+<item>Dark</item>
+<item>Backup</item>
+<item>Includes characters, chats and settings, without keys. Restore creates copies.</item>
+<item>Export backup</item>
+<item>Restore backup</item>
+<item>Chat context is sent to your API. Automatic summaries also use credits.</item>
+<item>Bundled content report</item>
+<item>Notice</item>
+<item>OK</item>
+<item>Me</item>
+<item>Preparing the next reply…</item>
+<item>Back</item>
+<item>Memory center</item>
+<item>Room settings</item>
+<item>Auto select</item>
+<item>Write your response…</item>
+<item>Stop</item>
+<item>Send</item>
+<item>Send a message or choose a character greeting.</item>
+<item>Typing…</item>
+<item>Failed · Retry available</item>
+<item>Interrupted · Retry available</item>
+<item>Copy</item>
+<item>Regenerate</item>
+<item>Edit and create branch</item>
+<item>The original stays intact. The new branch starts here.</item>
+<item>Message</item>
+<item>Save branch</item>
+<item>Cancel</item>
+<item>Save</item>
+<item>Done</item>
+<item>Continue</item>
+<item>Character settings</item>
+<item>Name</item>
+<item>Description</item>
+<item>Personality</item>
+<item>Character scenario</item>
+<item>Greeting</item>
+<item>Dialogue examples</item>
+<item>Character instructions</item>
+<item>Final instructions</item>
+<item>Linked lorebooks</item>
+<item>Alternate greetings (separate with a line containing ---)</item>
+<item>No character artwork available.</item>
+<item>Previous</item>
+<item>Next</item>
+<item>Lorebook entries</item>
+<item>Add entry</item>
+<item>Empty entry</item>
+<item>Keywords (comma-separated)</item>
+<item>Lore content</item>
+<item>Priority</item>
+<item>Enabled</item>
+<item>Always active</item>
+<item>Delete entry</item>
+<item>Scans the last 6 messages. Higher priority comes first.</item>
+<item>Room and memory</item>
+<item>Room name</item>
+<item>Participants (1–8)</item>
+<item>Room API</item>
+<item>Choose your identity</item>
+<item>Your name</item>
+<item>Your persona</item>
+<item>Story scenario</item>
+<item>Pinned memory (always sent)</item>
+<item>Recent summary</item>
+<item>Long-term summary</item>
+<item>Organize memory every 12 complete messages</item>
+<item>Replies per turn</item>
+<item>Room lorebooks</item>
+<item>Long cards default to 32K context. Match your provider limits.</item>
+<item>API configuration</item>
+<item>Profile name</item>
+<item>Base URL (include /v1, omit /chat/completions)</item>
+<item>API key (blank keeps saved key)</item>
+<item>Model</item>
+<item>Fetch models</item>
+<item>Test connection</item>
+<item>Context length</item>
+<item>Maximum output</item>
+<item>Streaming</item>
+<item>Embedding model (optional, for memory vectors)</item>
+<item>Uses /embeddings at the same base URL. Blank uses keyword search. Rebuild in Memory center.</item>
+<item>Context is conservatively estimated. Connection test sends a small request.</item>
+<item>World name</item>
+<item>World and background</item>
+<item>Background applies to all chats in this world. Story memories are isolated.</item>
+<item>Your playable identities</item>
+<item>Add identity</item>
+<item>Characters in this world</item>
+<item>Characters used by rooms are retained. Create or import more within the world.</item>
+<item>World-wide lorebooks</item>
+<item>Reference documents</item>
+<item>Player identity</item>
+<item>Identity name</item>
+<item>Identity, personality and background</item>
+<item>Delete identity</item>
+<item>Dialogue → Recent summary → Long summary → Facts → Retrieval</item>
+<item>Overview</item>
+<item>Memory facts</item>
+<item>Stages</item>
+<item>Memory index</item>
+<item>Using keyword search. Configure embeddings in API settings.</item>
+<item>Organize memory</item>
+<item>Rebuild vector index</item>
+<item>Manual organization extracts the last 12 complete messages. Automatic organization updates summaries and facts. Uses your API.</item>
+<item>Pinned memory</item>
+<item>None yet. Edit in room settings.</item>
+<item>Recent summary · Current stage</item>
+<item>No stage summary. Original messages are retained.</item>
+<item>Long summary · Story so far</item>
+<item>No long-term summary yet.</item>
+<item>Search facts</item>
+<item>Add memory</item>
+<item>Swipe for sources and status. Tap to edit. Locked facts are not overwritten automatically.</item>
+<item>Type</item>
+<item>Subject</item>
+<item>Fact</item>
+<item>Source / status</item>
+<item>Organized as the story develops.</item>
+<item>Memory entry</item>
+<item>Subject (include specific attributes)</item>
+<item>Fact content</item>
+<item>Lock against automatic updates</item>
+<item>Enable retrieval</item>
+<item>Share across this world</item>
+<item>World sharing makes this fact available to other rooms and branches. Default is this story only.</item>
+<item>Each profile stores its own URL, model and key. Add named profiles for different keys.</item>
+<item>Add API</item>
+<item>Active</item>
+<item>Edit</item>
+<item>Switch to this API</item>
+<item>Delete</item>
+<item>Deletes the profile and local key. Switch rooms using it before deletion.</item>
+<item>Only this room changes. Switching stops generation and saves partial replies, without resending.</item>
+<item>Close</item>
+<item>Lorebook name</item>
+<item>Expand</item>
+<item>Collapse</item>
+<item>Retry branch naming</item>
+<item>Rename with AI</item>
+<item>{0} characters · {1} identities</item>
+<item>{0} chats · Stored on device</item>
+<item>{0} entries · {1} enabled</item>
+<item>Version {0} · Install the new APK over this version. Do not uninstall.</item>
+<item>{0} characters · {1} replies per turn</item>
+<item>API: {0} · Switch / manage</item>
+<item>Not configured</item>
+<item>{0} · Ready to begin</item>
+<item>View artwork ({0})</item>
+<item>{0} · Artwork</item>
+<item>Cannot load artwork: {0}</item>
+<item>{0} participants</item>
+<item>Summarized through message {0}; original messages are retained.</item>
+<item>Temperature {0}</item>
+<item>{0} enabled · {1} valid vectors</item>
+<item>Embedding model: {0}. Falls back to keyword search on failure.</item>
+<item>Covered through message {0}. Earlier summaries remain in Stages.</item>
+<item>Messages {0}–{1}</item>
+<item>Delete {0}?</item>
+<item>Stop generation first</item>
+<item>Select an API first</item>
+<item>The API returned no content</item>
+<item>Invalid opening format. Please retry.</item>
+<item>Generation failed. Please retry.</item>
+<item>Operation failed. Please retry.</item>
+<item>Loading…</item>
+<item>Incomplete candidate</item>
+<item>Complete</item>
+<item>Failed</item>
+<item>Interrupted</item>
+<item>Generating</item>
+<item>New action (optional)</item>
+<item>Mark ending</item>
+<item>Outcome</item>
+<item>Manually specified</item>
+<item>API switched. The next message uses the new profile. Received replies are saved.</item>
+<item>API profile not found</item>
+<item>World data is too long. Increase the context budget.</item>
+<item>Enter a room name and select an API and 1–8 characters.</item>
+<item>Backup exported without API keys.</item>
+<item>Imported all supported fields.</item>
+<item>Branch created. Original story retained. Continue chatting.</item>
+<item>Restored as copies. Enter API keys for restored profiles.</item>
+<item>Greetings require an empty room.</item>
+<item>Room not found</item>
+<item>No API configured for this room</item>
+<item>File exceeds size limit</item>
+<item>Check context, output limit and temperature.</item>
+<item>Model list loaded</item>
+<item>No bundled content. You can import your own.</item>
+<item>Memory organized and vector index updated.</item>
+<item>Facts updated. No embedding model; using keyword search.</item>
+<item>Stop current generation first</item>
+<item>Stop generation before editing the room.</item>
+<item>Stop generation before restoring.</item>
+<item>Stop generation or wait for switching.</item>
+<item>Set an embedding model in API settings. Currently using keyword search.</item>
+<item>Enter an API name and model.</item>
+<item>Enter a lorebook name.</item>
+<item>Enter a world name.</item>
+<item>Enter a subject and fact.</item>
+<item>Enter a character name.</item>
+<item>Increase context budget for the world guide.</item>
+<item>Enter a valid HTTPS API URL.</item>
+<item>No conversation to organize yet.</item>
+<item>Connected and received a model reply.</item>
+<item>API error during generation.</item>
+<item>API URL cannot contain credentials, query parameters or fragments.</item>
+<item>API returned no text.</item>
+<item>API returned an empty response.</item>
+<item>Context length must exceed maximum output.</item>
+<item>Incompatible response or interrupted connection. Check the service and retry.</item>
+<item>Output limit reached. Partial reply saved.</item>
+<item>Output limit reached. Partial reply saved; increase the limit and retry.</item>
+<item>Connection interrupted. Partial reply saved.</item>
+<item>The server stopped this reply.</item>
+<item>Connection failed or timed out. Check the URL and network.</item>
+<item>Enter an embedding model first.</item>
+<item>Enter a model name.</item>
+<item>Too many requests or insufficient credits (429). Retry later.</item>
+</string-array>
+</resources>

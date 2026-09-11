@@ -24,8 +24,8 @@ class EngineTest {
     @Test fun promptIncludesOnlyCurrentCharacterAndNamedHistory() {
         val room = ChatRoom(userName="旅人", scenario="车站", pinned="寻找钥匙", summary="刚刚抵达")
         val prompt = Engine.prompt(a.copy(description="{{char}}等待{{user}}"), room, listOf(a,b), listOf(Message(speakerId="b", text="欢迎")), emptyList())
-        assertTrue(prompt.first().content.contains("阿岚等待旅人"))
-        assertTrue(prompt.first().content.contains("寻找钥匙"))
+        assertTrue(prompt.any { it.content.contains("阿岚等待旅人") })
+        assertTrue(prompt.any { it.content.contains("寻找钥匙") })
         assertTrue(prompt.any { it.role == "assistant" && it.content.contains("小雪") })
     }
     @Test fun oversizedFixedPromptFailsInsteadOfDroppingIt() {
