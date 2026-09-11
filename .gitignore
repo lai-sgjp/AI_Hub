@@ -19,3 +19,4 @@ docs/screenshots/
 *.db-shm
 .env
 .env.*
+scripts/__pycache__/

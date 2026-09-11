@@ -18,9 +18,24 @@ import javax.crypto.spec.GCMParameterSpec
 
 @Entity(tableName="records")
 data class Record(@PrimaryKey val id: String, val kind: String, val payload: String)
+data class RecordHead(val id: String, val kind: String, val payload: String, val size: Int)
 @Dao interface RecordDao {
-    @Query("SELECT * FROM records") fun observe(): Flow<List<Record>>
-    @Query("SELECT * FROM records") suspend fun all(): List<Record>
+    @Query("SELECT id FROM records") fun observe(): Flow<List<String>>
+    // Keep every cursor row small, including existing cards with large embedded avatars.
+    @Query("SELECT id, kind, substr(payload, 1, 262144) AS payload, length(payload) AS size FROM records")
+    suspend fun heads(): List<RecordHead>
+    @Query("SELECT substr(payload, :offset, 262144) FROM records WHERE id = :id")
+    suspend fun chunk(id: String, offset: Int): String
+    @Transaction suspend fun all(): List<Record> = heads().map { head ->
+        val payload=StringBuilder(head.payload)
+        // SQLite offsets count Unicode code points, not Kotlin UTF-16 code units.
+        var offset=262145
+        while(offset<=head.size) {
+            payload.append(chunk(head.id,offset))
+            offset+=262144
+        }
+        Record(head.id,head.kind,payload.toString())
+    }
     @Upsert suspend fun put(records: List<Record>)
     @Query("DELETE FROM records WHERE id = :id AND kind = 'profile'") suspend fun deleteProfile(id: String)
     @Query("SELECT EXISTS(SELECT 1 FROM records WHERE id = :id AND kind = 'bundle')") suspend fun hasBundle(id: String): Boolean
@@ -31,7 +46,7 @@ abstract class TavernDatabase: RoomDatabase() { abstract fun records(): RecordDa
 
 class Repository(context: Context) {
     private val db = Room.databaseBuilder(context,TavernDatabase::class.java,"tavern.db").build()
-    val snapshots = db.records().observe().map(::decode)
+    val snapshots = db.records().observe().map { snapshot() }
     private fun decode(rows: List<Record>): Snapshot {
         fun <T> get(kind: String, decode: (String)->T) = rows.filter { it.kind==kind }.map { decode(it.payload) }
         return Snapshot(characters=get("character") { TavernJson.decodeFromString<Character>(it) }, books=get("book") { TavernJson.decodeFromString<LoreBook>(it) }, profiles=get("profile") { TavernJson.decodeFromString<ApiProfile>(it) }, rooms=get("room") { TavernJson.decodeFromString<ChatRoom>(it) }.sortedByDescending { it.createdAt }, messages=get("message") { TavernJson.decodeFromString<Message>(it) }.sortedBy { it.sequence }, settings=get("settings") { TavernJson.decodeFromString<AppSettings>(it) }.firstOrNull() ?: AppSettings(), worlds=get("world") { TavernJson.decodeFromString<World>(it) },memories=get("memory") { TavernJson.decodeFromString<MemoryFact>(it) },segments=get("segment") { TavernJson.decodeFromString<SummarySegment>(it) })

@@ -15,7 +15,8 @@ object BundledContent {
                 .copy(assetPrefix=assetPrefix)
             if(repository.hasBundle(manifest.id)) continue
             val content=BundledLibrary.load(manifest) { path -> context.assets.open("bundled/$path").use { it.readBytes() } }
-            repository.installBundle(manifest.id,content)
+            val thumbnails=content.snapshot.characters.map { it.copy(avatar=AvatarThumbnail.create(it.avatar)) }
+            repository.installBundle(manifest.id,content.copy(snapshot=content.snapshot.copy(characters=thumbnails)))
         }
     }
 

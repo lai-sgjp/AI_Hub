@@ -1,10 +1,14 @@
 # 安装更新
 
-当前版本 0.1.1（versionCode 2），应用包名固定为 `cn.aitavern.app`。
+当前版本 0.1.2（versionCode 3），应用包名固定为 `cn.aitavern.app`。本地交付文件为 `dist/AI-Tavern-0.1.2-private-debug.apk`。
 
 以后下载新版 APK，在手机的下载列表中点开，按安卓提示确认“更新”。首次使用该下载来源时，系统可能要求允许安装应用。无需卸载旧版；覆盖安装会保留本机聊天、角色、世界、记忆及加密保存的 API 密钥。卸载会清除这些本机数据，更新时不要卸载。
 
 当前没有远程更新服务器或应用内自动下载。私人内置资料随本地 APK 交付，不放入公开 GitHub Releases。安卓安装确认仍由用户操作。
+
+同一个完整 APK 同时用于首次安装和覆盖更新。已有用户保留本机数据，并只初始化未安装过的内置世界；首次安装初始化 APK 中的全部内置世界。目前没有差分下载功能。
+
+0.1.2 对大记录使用事务内分段读取，避免内嵌头像或长文本超过 Android CursorWindow 限制。数据库表结构、存档内容、加密凭据格式均保持兼容，无需重置数据库。
 
 ## 后续构建约定
 
@@ -14,7 +18,7 @@
 - 保持 Room 数据迁移兼容，不使用破坏性数据库重建，不重新覆盖已初始化的内置资料。
 - 交付前用 `apksigner verify --print-certs` 比较旧、新 APK 的证书，再在已有数据的测试设备运行 `scripts/check-upgrade.py --adb <adb> --serial <device> --apk <new.apk>`。
 - `./scripts/package-update.ps1 -PreviousApk <上次交付.apk>` 自动构建并检查签名、包名及递增版本号，再输出新 APK 到忽略目录 `dist/`。缺少原始签名、版本未递增或输出已存在时会停止。
-- 此脚本执行覆盖安装，对比数据库记录及加密凭据文件；仅输出计数，不输出私人内容。实体手机安装确认和厂商限制仍需真机验证。
+- `check-upgrade.py` 执行覆盖安装，逐条检查旧记录的类型和内容不变，允许增加新世界记录，核对加密凭据文件不变，并等待 APK 中的内置包初始化标记齐全；还检查更新后进程仍存活。仅输出计数，不输出私人内容。未配置 API 密钥的旧安装也可检查。实体手机安装确认和厂商限制仍需真机验证。
 
 Android 官方说明：[更新匹配规则](https://developer.android.com/google/play/app-updates)、[版本号规则](https://developer.android.com/studio/publish/versioning)。
 
