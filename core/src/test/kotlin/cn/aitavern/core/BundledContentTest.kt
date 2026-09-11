@@ -24,6 +24,23 @@ class BundledContentTest {
         assertEquals(image.id,second.characters.single().gallery.single().id)
     }
 
+    @Test fun prefixesBundledGalleryAssetsWithoutChangingManifestPaths() {
+        val manifest=BundleManifest(
+            id="nested-gallery-pack",
+            worldName="嵌套画廊世界",
+            assetPrefix="bundles/nested-gallery-pack",
+            cards=listOf("characters/a.json"),
+            galleries=mapOf("characters/a.json" to listOf(BundleImage("立绘","characters/a/portrait.png","image/png")))
+        )
+        val reads=mutableListOf<String>()
+        val result=BundledLibrary.load(manifest) {
+            reads+=it
+            if(it.endsWith("a.json")) "{\"name\":\"向导\"}".toByteArray() else byteArrayOf(1)
+        }.snapshot
+        assertEquals(listOf("bundles/nested-gallery-pack/characters/a.json","bundles/nested-gallery-pack/characters/a/portrait.png"),reads)
+        assertEquals("bundles/nested-gallery-pack/characters/a/portrait.png",result.characters.single().gallery.single().assetPath)
+    }
+
     @Test fun rejectsGalleryPathTraversalBeforeReadingExternalAsset() {
         var galleryRead=false
         val manifest=BundleManifest(
