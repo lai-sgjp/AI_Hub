@@ -4,20 +4,28 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable data class BundleDocument(val title: String,val path: String)
+@Serializable data class BundleImage(val title: String = "", val path: String, val mimeType: String = "image/png")
 @Serializable data class BundleManifest(
     val id: String,val worldName: String,val worldDescription: String = "",val playerName: String = "我",
     val playerDescription: String = "",val cards: List<String> = emptyList(),val books: List<String> = emptyList(),
-    val documents: List<BundleDocument> = emptyList(),val preferredCharacters: List<String> = emptyList()
+    val documents: List<BundleDocument> = emptyList(),val preferredCharacters: List<String> = emptyList(),
+    val galleries: Map<String,List<BundleImage>> = emptyMap()
 )
 data class BundleImport(val snapshot: Snapshot,val report: String)
 
 object BundledLibrary {
     fun load(manifest: BundleManifest,read: (String)->ByteArray): BundleImport {
         require(manifest.id.isNotBlank() && manifest.worldName.isNotBlank()) { "内置世界清单不完整" }
+        require(manifest.galleries.keys.all { it in manifest.cards }) { "画廊必须关联已声明的角色卡" }
         fun stable(key: String)=UUID.nameUUIDFromBytes("${manifest.id}/$key".toByteArray(Charsets.UTF_8)).toString()
         fun input(path: String): ByteArray {
             require(path.isNotBlank() && !path.startsWith('/') && '\\' !in path && ':' !in path && path.split('/').none { it==".." || it=="." || it.isBlank() }) { "内置资源路径无效" }
             return read(path).also { require(it.size<=CardCodec.MAX_FILE) { "内置资源过大" } }
+        }
+        fun gallery(path: String, images: List<BundleImage>): List<CharacterImage> = images.mapIndexed { index,image ->
+            require(image.mimeType in setOf("image/png","image/jpeg","image/webp")) { "不支持的画廊图片类型：${image.mimeType}" }
+            input(image.path)
+            CharacterImage(id=stable("$path/gallery/$index"),title=image.title.ifBlank { "立绘 ${index+1}" },assetPath=image.path,mimeType=image.mimeType)
         }
         val books=mutableListOf<LoreBook>(); val characters=mutableListOf<Character>(); val warnings=mutableListOf<String>()
         fun stableBook(book: LoreBook,path: String)=book.copy(id=stable(path),entries=book.entries.mapIndexed { i,e -> e.copy(id=stable("$path/$i")) })
@@ -33,7 +41,7 @@ object BundledLibrary {
             if(card.character.name==manifest.playerName) { warnings+="玩家人格已排除出 AI 角色列表：$path"; continue }
             val internalBooks=card.books.mapIndexed { i,b -> stableBook(b,"$path/book/$i") }
             books+=internalBooks
-            characters+=card.character.copy(id=stable(path),bookIds=internalBooks.map { it.id })
+            characters+=card.character.copy(id=stable(path),bookIds=internalBooks.map { it.id },gallery=gallery(path,manifest.galleries[path].orEmpty()))
         }
         val ordered=characters.sortedBy { c -> manifest.preferredCharacters.indexOf(c.name).let { if(it<0) Int.MAX_VALUE else it } }
         val documents=manifest.documents.map { WorldDocument(it.title,input(it.path).toString(Charsets.UTF_8).removePrefix("\uFEFF")) }

@@ -12,7 +12,10 @@ val TavernJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     val personality: String = "", val scenario: String = "", val greeting: String = "",
     val examples: String = "", val systemPrompt: String = "", val postHistory: String = "",
     val alternateGreetings: List<String> = emptyList(), val bookIds: List<String> = emptyList(),
-    val avatar: String = ""
+    val avatar: String = "", val gallery: List<CharacterImage> = emptyList()
+)
+@Serializable data class CharacterImage(
+    val id: String = newId(), val title: String = "", val assetPath: String = "", val mimeType: String = "image/png"
 )
 @Serializable data class LoreEntry(
     val id: String = newId(), val keys: List<String> = emptyList(), val content: String = "",

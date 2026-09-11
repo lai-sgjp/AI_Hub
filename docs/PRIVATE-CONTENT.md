@@ -15,7 +15,12 @@
   "worldDescription": "共同遵守的世界背景和玩家身份规则",
   "playerName": "玩家",
   "playerDescription": "用户扮演的人格，不由 AI 代演",
-  "preferredCharacters": []
+  "preferredCharacters": [],
+  "characterGalleries": {
+    "alice.json": [
+      {"path": "gallery/alice-01.png", "title": "日常立绘"}
+    ]
+  }
 }
 ```
 
@@ -24,7 +29,7 @@ python scripts/bundle-content.py --config private-content/bundle.json
 ./scripts/build.ps1
 ```
 
-脚本读取源目录，复制 JSON、Markdown 和 PNG 到 `app/src/main/assets/bundled/`；它不修改外部源目录。JSON 角色卡和世界书进入清单，Markdown 作为世界的参考资料。Markdown 资料可在“管理世界”查看，不会整本注入聊天上下文。
+脚本读取源目录，复制 JSON、Markdown、PNG/JPEG/WebP 到 `app/src/main/assets/bundled/`；它不修改外部源目录。JSON 角色卡和世界书进入清单，Markdown 作为世界的参考资料，`characterGalleries` 将独立图片关联到角色卡。Markdown 资料可在“管理世界”查看，不会整本注入聊天上下文。
 
 `BundledLibrary` 将清单转换为稳定 UUID 的世界、角色、世界书和玩家人格。与玩家同名的卡不会加入 AI 角色。每个 bundle id 只初始化一次，标记与内容使用同一数据库事务保存；用户后续编辑不会被重启覆盖。
 
