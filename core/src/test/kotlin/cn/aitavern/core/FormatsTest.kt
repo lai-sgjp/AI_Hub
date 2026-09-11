@@ -24,7 +24,7 @@ class FormatsTest {
     @Test fun importsV1() { assertEquals("旧卡", CardCodec.importCard("""{"name":"旧卡","first_mes":"你好"}""".toByteArray()).character.name) }
     @Test fun importsV3() { assertEquals("夏", CardCodec.importCard(cardV3.toByteArray()).character.name) }
     @Test fun malformedCardRejected() { assertFails { CardCodec.importCard("{}".toByteArray()) } }
-    @Test fun unsupportedVersionRejected() { assertFails { CardCodec.importCard("""{"spec":"chara_card_v3","data":{"name":"X"}}""".toByteArray()) } }
+    @Test fun unsupportedVersionRejected() { assertFails { CardCodec.importCard("""{"spec":"chara_card_v4","data":{"name":"X"}}""".toByteArray()) } }
     @Test fun readsPngTextChunk() {
         val out = ByteArrayOutputStream()
         val data = DataOutputStream(out)

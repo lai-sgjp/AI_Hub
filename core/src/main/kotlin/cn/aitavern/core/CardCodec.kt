@@ -21,12 +21,12 @@ object CardCodec {
         val png = bytes.take(8).toByteArray().contentEquals(signature)
         val root = parse(if(png) pngCard(bytes) else bytes)
         val spec = root.text("spec")
-        require(spec.isEmpty() || spec == "chara_card_v2") { "暂不支持此角色卡版本：$spec" }
+        require(spec.isEmpty() || spec == "chara_card_v2" || spec == "chara_card_v3") { "暂不支持此角色卡版本：$spec" }
         val data = if(spec.isEmpty()) root else root["data"]!!.jsonObject
         val name = data.text("name").trim()
         require(name.isNotEmpty()) { "角色卡缺少名字" }
         val warnings = mutableListOf<String>()
-        val supported = setOf("name","description","personality","scenario","first_mes","mes_example","system_prompt","post_history_instructions","alternate_greetings","character_book")
+        val supported = setOf("name","description","personality","scenario","first_mes","mes_example","system_prompt","post_history_instructions","alternate_greetings","character_book","creator","character_version","creator_notes","tags","nickname","group_only_greetings","assets","source","creation_date","modification_date","creator_notes_multilingual")
         data.keys.filter { it !in supported }.forEach { warnings += "角色字段未应用：$it" }
         val books = data["character_book"]?.takeUnless { it is JsonNull }?.let {
             val (book, notes) = book(it.jsonObject, "$name · 世界书"); warnings += notes; listOf(book)
@@ -48,7 +48,7 @@ object CardCodec {
             val type = typeBytes.toString(Charsets.US_ASCII)
             if(type == "tEXt") {
                 val split = data.indexOf(0)
-                if(split >= 0 && data.copyOfRange(0,split).toString(Charsets.US_ASCII) == "chara") {
+                if(split >= 0 && data.copyOfRange(0,split).toString(Charsets.US_ASCII) in setOf("chara","ccv3")) {
                     payload = Base64.getDecoder().decode(data.copyOfRange(split+1,data.size))
                 }
             }
